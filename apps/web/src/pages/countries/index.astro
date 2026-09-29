@@ -1,0 +1,25 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getStats } from "~/lib/db";
+import { countryName, fmtInt } from "~/lib/format";
+import { localePath, t } from "~/i18n";
+export const prerender = false;
+
+const locale = Astro.locals.locale;
+const d = t(locale);
+const stats = await getStats(env.DB);
+const L = (href: string) => localePath(locale, href);
+const rows = stats.countries.map((c) => ({ code: c.country, name: countryName(c.country, locale), open: c.open })).sort((a, b) => (a.code === "EU" ? -1 : b.code === "EU" ? 1 : a.name.localeCompare(b.name, locale)));
+---
+<Base title={d.countries_title} description={d.countries_lead}>
+  <div class="wrap" style="padding-top:3rem;max-width:900px">
+    <span class="kicker">{d.nav_countries}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.countries_title}</h1>
+    <p class="lead">{d.countries_lead}</p>
+    <table style="margin-top:1.5rem">
+      <thead><tr><th>{d.nav_countries}</th><th>{d.status_current}</th></tr></thead>
+      <tbody>{rows.map((c) => <tr><td><a href={L(`/countries/${c.code.toLowerCase()}`)}>{c.name}</a></td><td class="mono">{fmtInt(c.open)}</td></tr>)}</tbody>
+    </table>
+  </div>
+</Base>

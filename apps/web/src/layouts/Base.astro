@@ -1,0 +1,131 @@
+---
+import "~/styles/global.css";
+import { defaultLocale, localeNames, localePath, locales, t } from "~/i18n";
+import Logo from "~/components/Logo.astro";
+import { env } from "cloudflare:workers";
+import { getSiteFacts } from "~/lib/db";
+import { currentAccount } from "~/lib/account";
+import { isAdmin } from "~/lib/auth";
+import { fmtDate, fmtInt } from "~/lib/format";
+
+interface Props {
+  title: string;
+  description?: string;
+  locale?: string;
+  // Language of the page body when it differs from the UI locale (grant pages keep the source language).
+  contentLang?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
+}
+const locale = Astro.props.locale ?? Astro.locals.locale ?? defaultLocale;
+const { title, description, contentLang, noindex = false, jsonLd } = Astro.props;
+const d = t(locale);
+const basePath = Astro.url.pathname;
+const path = localePath(locale, basePath);
+// Paginated lists keep their page number in the canonical; every other parameter (filters, search) collapses.
+const pageParam = Astro.url.searchParams.get("page");
+const canonical = new URL(path + (pageParam && pageParam !== "1" ? `?page=${encodeURIComponent(pageParam)}` : ""), Astro.site ?? Astro.url.origin).href;
+const alternate = (l: string) => new URL(localePath(l, basePath), Astro.site ?? Astro.url.origin).href;
+const fullTitle = title === d.site_name ? `${d.site_name}: ${d.tagline}` : `${title} | ${d.site_name}`;
+const current = (href: string) => (href === "/" ? basePath === "/" : basePath.startsWith(href)) ? "page" : undefined;
+const L = (href: string) => localePath(locale, href);
+const facts = await getSiteFacts(env.DB);
+// Who is looking: a Pro account (magic link), the admin (Cloudflare Access cookie), or a visitor.
+const account = await currentAccount(Astro.request, env);
+const admin = !account && (await isAdmin(Astro.request, env));
+---
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description ?? d.tagline} />
+    <link rel="canonical" href={canonical} />
+    {locales.map((l) => <link rel="alternate" hreflang={l} href={alternate(l)} />)}
+    <link rel="alternate" hreflang="x-default" href={alternate(defaultLocale)} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description ?? d.tagline} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={d.site_name} />
+    <meta property="og:locale" content={({ en: "en_GB", fr: "fr_FR", de: "de_DE", es: "es_ES", it: "it_IT", pt: "pt_PT", nl: "nl_NL", pl: "pl_PL" } as Record<string, string>)[locale] ?? locale} />
+    <meta property="og:image" content={new URL("/og.png", Astro.site ?? Astro.url.origin).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171511" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4efe6" media="(prefers-color-scheme: light)" />
+    <meta name="apple-mobile-web-app-title" content="grantledger" />
+    <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />}
+    <script is:inline>
+      try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href={L("/")}><Logo size={24} /><span>grant<b>ledger</b></span></a>
+        <nav class="nav" aria-label="Main">
+          <a href={L("/grants")} aria-current={current("/grants")}>{d.nav_grants}</a>
+          <a href={L("/countries")} aria-current={current("/countries")}>{d.nav_countries}</a>
+          <a href={L("/find")} aria-current={current("/find")}>{d.nav_find}</a>
+          {account ? (
+            <span class="who"><a href="/me" title={account.email}>{account.email}</a><form method="post" action="/api/logout"><button type="submit">Sign out</button></form></span>
+          ) : admin ? (
+            <span class="who"><a href="/admin">Admin</a></span>
+          ) : (
+            <a href="/login">Sign in</a>
+          )}
+          <details class="lang">
+            <summary aria-label="Language">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+              <span>{localeNames[locale] ?? locale.toUpperCase()}</span>
+            </summary>
+            <ul>
+              {locales.map((l) => <li><a href={localePath(l, basePath)} hreflang={l} lang={l} aria-current={l === locale ? "true" : undefined}>{localeNames[l] ?? l.toUpperCase()}</a></li>)}
+            </ul>
+          </details>
+          <button class="theme" type="button" id="theme-toggle" aria-label="Switch between light and dark theme" title="Theme">
+            <svg class="sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <span><a href="https://aiteklabs.com" rel="noopener" style="text-decoration:none;font-weight:600">Aitek Labs</a> · {d.footer_text.replace("Built by Aitek Labs. ", "")}</span>
+        <span><a href="https://github.com/aiteklabs/grantledger" rel="noopener">Source code</a> · <a href="/pro">Pro</a> · <a href={L("/coverage")}>Coverage</a> · <a href="/methodology">Methodology</a> · <a href="/about">About</a> · <a href="/ai-notice">AI notice</a> · <a href="/privacy">Privacy</a> · <a href="/legal-notice">Legal notice</a> · <a href="/status">Status</a> · <a href="/sitemap.xml">Sitemap</a></span>
+      </div>
+      <div class="wrap facts mono small">
+        <span>Ledger refreshed {facts.refreshed ? fmtDate(facts.refreshed) : "never"}</span>
+        <span>{fmtInt(facts.active)} current calls</span>
+        <span>{facts.countries} countries + EU-wide</span>
+        <span>{facts.sources} official sources</span>
+      </div>
+    </footer>
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById("theme-toggle");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+          var root = document.documentElement;
+          var dark = root.dataset.theme === "dark" || (!root.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var next = dark ? "light" : "dark";
+          root.dataset.theme = next;
+          try { localStorage.setItem("theme", next); } catch (e) {}
+        });
+      })();
+    </script>
+  </body>
+</html>

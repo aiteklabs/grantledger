@@ -1,0 +1,223 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getFitCheck } from "~/lib/db";
+import type { CompanyProfile } from "~/lib/fit";
+import type { ProfileForm } from "~/lib/profile-form";
+import { countryName, FORM_COUNTRIES, NATIONAL_COVERAGE, parseJson } from "~/lib/format";
+import { geminiConfigured } from "~/lib/gemini";
+import { budgetReset, monthSpend } from "~/lib/spend";
+import { NACE_DIVISIONS } from "~/lib/nace";
+import { t } from "~/i18n";
+import { findPage } from "~/i18n/pages/find";
+import { currentAccount } from "~/lib/account";
+import { isAdmin } from "~/lib/auth";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const locale = Astro.locals.locale;
+const c = findPage[locale] ?? findPage.en!;
+const spend = await monthSpend(env.DB);
+const ready = geminiConfigured(env) && !spend.blocked;
+const reset = budgetReset();
+const draftId = Astro.url.searchParams.get("draft") ?? "";
+const error = Astro.url.searchParams.get("error") ?? "";
+const draft = /^[0-9a-f-]{36}$/.test(draftId) ? await getFitCheck(env.DB, draftId) : null;
+const profile = draft ? parseJson<CompanyProfile | null>(draft.profile, null) : null;
+// A form the user already confirmed wins over the model's draft, so "edit and re-run" keeps every answer.
+const form = draft ? parseJson<ProfileForm | null>(draft.form, null) : null;
+const pending = draft?.status === "pending";
+// Prefill runs in the background and cannot outlive the request by more than 30 seconds; a row still pending
+// after two minutes never finished.
+const stuck = pending && draft && Date.now() - Date.parse(draft.created_at) > 120_000;
+const p = form
+  ? {
+      company_name: form.company_name,
+      country: form.country,
+      region: form.region,
+      entity_type: form.entity_type,
+      headcount: form.headcount,
+      founded_year: form.founded_year ?? "",
+      revenue: form.revenue,
+      stage: form.stage,
+      trl: form.trl ?? "",
+      ip_status: form.ip_status,
+      prior_funding: form.prior_funding,
+      partners: form.partners,
+      nace: form.sectors,
+      keywords: form.keywords.join(", "),
+      funding_types: form.funding_types as string[],
+    }
+  : {
+      company_name: profile?.company_name ?? "",
+      country: profile?.country && profile.country !== "XX" ? profile.country : "",
+      region: profile?.region ?? "",
+      entity_type: profile?.entity_type ?? "company",
+      headcount: profile?.headcount ?? "unknown",
+      founded_year: profile?.founded_year ?? "",
+      revenue: profile?.revenue ?? "unknown",
+      stage: profile?.stage ?? "unknown",
+      trl: profile?.trl ?? "",
+      ip_status: profile?.ip_status ?? "unknown",
+      prior_funding: profile?.prior_funding ?? "unknown",
+      partners: profile?.partners ?? "unknown",
+      nace: profile?.nace_codes ?? [],
+      keywords: (profile?.keywords ?? []).join(", "),
+      funding_types: [] as string[],
+    };
+const sel = "width:100%;padding:0.7rem;font:inherit;border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink)";
+const countries = FORM_COUNTRIES;
+const errors: Record<string, string> = { ...c.errors, budget: d.find_budget_closed };
+// "Prefilled from {source} with confidence {confidence}." split around the bold confidence, so no HTML is injected.
+const [prefilledBefore = "", prefilledAfter = ""] = profile
+  ? c.prefilled.replace("{source}", draft?.input_name ?? draft?.input_ref ?? c.your_text).split("{confidence}")
+  : [];
+const turnstile = env.TURNSTILE_SITE_KEY;
+const account = await currentAccount(Astro.request, env);
+if (!account && !(await isAdmin(Astro.request, env))) return Astro.redirect("/pro?from=find", 303);
+---
+<Base title={d.find_title} description={d.find_lead} noindex={Boolean(draftId)}>
+  {pending && !stuck && <script is:inline>setTimeout(() => location.reload(), 4000);</script>}
+  {turnstile && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
+  <div class="wrap" style="padding-top:3rem;max-width:900px">
+    <span class="kicker">{d.nav_find}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{d.find_title}</h1>
+    <p class="lead">{d.find_lead}</p>
+    {error && <p class="callout">{errors[error] ?? c.generic_error}</p>}
+    {stuck && <p class="callout">{c.stuck}</p>}
+
+    {spend.blocked && <p class="callout" style="border-left-color:var(--signal)"><b>{d.find_budget_closed}</b> {d.find_budget_reopen.replace("{date}", reset.date).replace("{days}", String(reset.days))}</p>}
+    <details class="callout" open={!profile && !form && (!pending || stuck) && !spend.blocked} style="border-left-color:var(--moss)">
+      <summary style="cursor:pointer;font-weight:600">{d.find_prefill_title}</summary>
+      <p class="small muted" style="margin-top:0.6rem">{d.find_prefill_text} {c.model}: {env.GEMINI_MODEL}.</p>
+      {spend.blocked ? null : pending && !stuck ? (
+        <p><span class="pulse"></span>{d.fit_pending}</p>
+      ) : (
+        <form method="post" action="/api/prefill" enctype="multipart/form-data" class="form" style="margin-top:0.8rem">
+          <div class="field"><label for="url">{d.find_url_label}</label><input type="text" id="url" name="url" placeholder="https://yourcompany.com" inputmode="url" /></div>
+          <div class="field"><label for="pdf">{d.find_pdf_label}</label><input type="file" id="pdf" name="pdf" accept="application/pdf,.pdf" /></div>
+          <div class="field"><label for="text">{d.find_text_label}</label><textarea id="text" name="text" rows="3"></textarea></div>
+          {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
+          <div><button class="btn ghost" type="submit" disabled={!ready}>{d.find_prefill_submit}</button>{!ready && <span class="muted small"> {c.not_configured}</span>}</div>
+        </form>
+      )}
+      {draft?.status === "error" && <p class="callout mono small">{draft.error}</p>}
+      {profile && <p class="small" style="margin-top:0.8rem">{prefilledBefore}<b>{profile.confidence}</b>{prefilledAfter} {profile.notes}</p>}
+    </details>
+
+    <section id="recent" hidden style="margin-top:1.5rem" data-prefix={Astro.locals.locale === "en" ? "" : `/${Astro.locals.locale}`} data-fallback={c.your_company}>
+      <h2 style="font-size:1.2rem;margin:0 0 0.4rem">{d.find_recent_title}</h2>
+      <ul class="small" id="recent-list" style="margin:0;padding-left:1.2rem"></ul>
+      <p class="muted small" style="margin:0.4rem 0 0">{d.find_recent_note}</p>
+    </section>
+    <script is:inline>
+      // Screenings are private to their link; the browser keeps the last ten so a lost tab is not a lost result.
+      try {
+        const items = JSON.parse(localStorage.getItem("grantledger.fits") || "[]");
+        const box = document.getElementById("recent");
+        const list = document.getElementById("recent-list");
+        if (items.length && box && list) {
+          for (const it of items) {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = `${box.dataset.prefix}/fit/${it.id}`;
+            a.textContent = it.name || box.dataset.fallback;
+            li.append(a, ` · ${it.date}`);
+            list.append(li);
+          }
+          box.hidden = false;
+        }
+      } catch {}
+    </script>
+
+    <form class="form" method="post" action="/api/match" style="margin-top:2rem">
+      <input type="hidden" name="draft" value={draft?.id ?? ""} />
+      <input type="hidden" name="locale" value={Astro.locals.locale} />
+      <h2>{d.find_form_title}</h2>
+      <div class="field"><label for="company_name">{c.company_name}</label><input type="text" id="company_name" name="company_name" value={p.company_name} /></div>
+      <div class="profile-grid" style="gap:1.2rem">
+        <div class="field">
+          <label for="country">{c.country}</label>
+          <select id="country" name="country" required class="filters-select" style="width:100%;padding:0.7rem;font:inherit;border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink)">
+            <option value="">{c.choose}</option>
+            <option value="EU" selected={p.country === "EU"}>{c.anywhere_europe}</option>
+            <optgroup label={c.national_live}>{countries.filter((cc) => NATIONAL_COVERAGE[cc]).map((cc) => <option value={cc} selected={p.country === cc}>{countryName(cc, locale)}</option>)}</optgroup>
+            <optgroup label={c.eu_only}>{countries.filter((cc) => !NATIONAL_COVERAGE[cc]).map((cc) => <option value={cc} selected={p.country === cc}>{countryName(cc, locale)}</option>)}</optgroup>
+          </select>
+        </div>
+        <div class="field"><label for="region">{c.region}</label><input type="text" id="region" name="region" value={p.region} placeholder="ES30, FRK2, ..." /></div>
+        <div class="field">
+          <label for="entity_type">{c.entity_type}</label>
+          <select id="entity_type" name="entity_type" style="width:100%;padding:0.7rem;font:inherit;border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink)">
+            {Object.entries(c.entity_types).map(([v, l]) => <option value={v} selected={p.entity_type === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="headcount">{c.headcount}</label>
+          <select id="headcount" name="headcount" style={sel}>
+            {Object.entries(c.headcounts).map(([v, l]) => <option value={v} selected={p.headcount === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field"><label for="founded_year">{c.founded_year}</label><input type="text" id="founded_year" name="founded_year" inputmode="numeric" value={p.founded_year} placeholder="2023" /></div>
+        <div class="field">
+          <label for="revenue">{c.revenue}</label>
+          <select id="revenue" name="revenue" style={sel}>
+            {Object.entries(c.revenues).map(([v, l]) => <option value={v} selected={p.revenue === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="stage">{c.stage}</label>
+          <select id="stage" name="stage" style={sel}>
+            {Object.entries(c.stages).map(([v, l]) => <option value={v} selected={p.stage === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="trl">{c.trl}</label>
+          <select id="trl" name="trl" style={sel}>
+            <option value="" selected={p.trl === ""}>{c.trl_none}</option>
+            {Object.entries(c.trls).map(([v, l]) => <option value={v} selected={String(p.trl) === v}>{l}</option>)}
+          </select>
+          <p class="muted small" style="margin:0.3rem 0 0">{c.trl_note}</p>
+        </div>
+        <div class="field">
+          <label for="ip_status">{c.ip_status}</label>
+          <select id="ip_status" name="ip_status" style={sel}>
+            {Object.entries(c.ip_statuses).map(([v, l]) => <option value={v} selected={p.ip_status === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="prior_funding">{c.prior_funding}</label>
+          <select id="prior_funding" name="prior_funding" style={sel}>
+            {Object.entries(c.prior_fundings).map(([v, l]) => <option value={v} selected={p.prior_funding === v}>{l}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="partners">{c.partners}</label>
+          <select id="partners" name="partners" style={sel}>
+            {Object.entries(c.partner_options).map(([v, l]) => <option value={v} selected={p.partners === v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="sectors">{c.sectors}</label>
+        <select id="sectors" name="sectors" multiple size="8" style="width:100%;padding:0.5rem;font:inherit;font-size:0.9rem;border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink)">
+          {NACE_DIVISIONS.map((n) => <option value={n.code} selected={p.nace.includes(n.code)}>{n.code} · {n.name}</option>)}
+        </select>
+        <p class="muted small" style="margin:0.4rem 0 0">{c.sectors_note}</p>
+      </div>
+      <div class="field">
+        <span style="display:block;font-weight:600;font-size:0.92rem;margin-bottom:0.4rem">{c.instruments}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:0.6rem 1.2rem">
+          {Object.entries(c.funding_types).map(([k, v]) => <label style="font-weight:400;font-size:0.95rem"><input type="checkbox" name="funding_types" value={k} checked={p.funding_types.includes(k)} /> {v}</label>)}
+        </div>
+      </div>
+      <div class="field"><label for="keywords">{c.keywords}</label><input type="text" id="keywords" name="keywords" value={p.keywords} placeholder="artificial intelligence, digital skills, battery recycling" /><p class="muted small" style="margin:0.3rem 0 0">{c.keywords_note}</p></div>
+      <div class="field"><label for="email">{d.find_email_label}</label><input type="email" id="email" name="email" /></div>
+      {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
+      <div>
+        <button class="btn signal" type="submit">{d.find_submit}</button>
+        <p class="muted small" style="margin-top:0.8rem">{d.find_privacy}</p>
+      </div>
+    </form>
+  </div>
+</Base>

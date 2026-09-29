@@ -1,0 +1,105 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getStats } from "~/lib/db";
+import { SOURCE_NAMES, fmtDate, fmtInt } from "~/lib/format";
+import { t } from "~/i18n";
+import { methodology } from "~/i18n/pages/methodology";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const c = methodology[Astro.locals.locale] ?? methodology.en;
+// Split a paragraph around its inline link placeholder.
+const around = (s: string) => s.split("{link}") as [string, string];
+const [leadBefore, leadAfter] = around(c.lead);
+const [sourcesBefore, sourcesAfter] = around(c.sources_p);
+const stats = await getStats(env.DB);
+const licenses: Record<string, string> = {
+  eu_ft: "European Commission reuse policy (Decision 2011/833/EU)",
+  es_bdns: "BDNS legal notice (infosubvenciones.es)",
+  fr_aides_entreprises: "Licence Ouverte 2.0 (Etalab)",
+  us_grants_gov: "US Government work, public domain",
+  nl_rvo: "CC0 1.0 (data.overheid.nl)",
+  lt_esinvesticijos: "Public information, esinvesticijos.lt",
+  uk_find_a_grant: "Open Government Licence v3.0",
+  it_incentivi: "IODL 2.0 (Italian Open Data License)",
+  se_vinnova: "Public Domain Mark (Vinnova)",
+  fi_eura: "Public call notices (EURA 2021)",
+  no_forskningsradet: "Public call information (Forskningsrådet)",
+  dk_tilskudspuljer: "Open data export (Statens Tilskudspuljer)",
+  at_ffg: "Public call information (FFG)",
+  pt_portugal2030: "Public call notices (Portugal 2030)",
+  de_foerderinfo: "Public federal announcements (Förderberatung des Bundes)",
+  cz_dotaceeu: "Public call list (dotaceeu.cz)",
+  gr_espa: "Public proclamations (ESPA)",
+  ie_enterprise_ireland: "Public supports information (Enterprise Ireland)",
+  ro_mfe: "Public announcements (MIPE)",
+  pl_harmonogram: "CC0 1.0 (dane.gov.pl)",
+  be_1890: "Public directory (1890.be, Région wallonne)",
+  be_innoviris: "Public programme calendar (Innoviris)",
+  be_vlaio: "Public information (VLAIO)",
+  at_aws: "aws public programme information (aws.at)",
+  at_fwf: "FWF public funding programme information",
+  be_belspo: "BELSPO public call information",
+  dk_dff: "Danmarks Frie Forskningsfond public call information",
+  dk_innovationsfonden: "Innovationsfonden public call information",
+  dk_kunstfond: "Statens Kunstfond public grant pool information",
+  de_dfg: "DFG public calls for proposals (Informationen für die Wissenschaft)",
+  ie_enterprise_hub: "National Enterprise Hub public business supports information (Government of Ireland)",
+  ie_research_ireland: "Research Ireland public funding call information",
+  no_innovasjonnorge: "Innovasjon Norge public service information",
+  no_tilskudd: "Tilskudd.no public register of state grant schemes (Lotteri- og stiftelsestilsynet)",
+  pt_fct: "FCT public call information",
+  pt_fundo_ambiental: "Fundo Ambiental public call notices (Agência para o Clima, I.P.)",
+  lt_inovacijuagentura: "Inovacijų agentūra public call information (inovacijuagentura.lt)",
+};
+---
+<Base title={d.method_title} description={c.description}>
+  <div class="wrap" style="padding-top:3rem;max-width:860px">
+    <span class="kicker">{d.nav_method}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{c.h1}</h1>
+    <p class="lead">{leadBefore}<a href="https://github.com/aiteklabs/grantledger" rel="noopener">{c.lead_link}</a>{leadAfter}</p>
+
+    <h2>{c.sources_h}</h2>
+    <p>{sourcesBefore}<a href="/coverage">{c.sources_link}</a>{sourcesAfter}</p>
+    <table>
+      <thead><tr><th>{c.th_source}</th><th>{c.th_license}</th><th>{c.th_current}</th><th>{c.th_archived}</th><th>{c.th_checked}</th></tr></thead>
+      <tbody>{stats.sources.map((s) => <tr><td>{SOURCE_NAMES[s.source] ?? s.source}</td><td class="small">{licenses[s.source]}</td><td>{fmtInt(s.open)}</td><td>{fmtInt(s.n - s.open)}</td><td class="mono small">{fmtDate(s.last_seen)}</td></tr>)}</tbody>
+    </table>
+    <p class="small muted">{c.coverage_note}</p>
+
+    <h2>{c.schema_h}</h2>
+    <p>{c.schema_p}</p>
+
+    <h2>{c.versions_h}</h2>
+    <p>{c.versions_p}</p>
+
+    <h2>{c.fit_h}</h2>
+    <p>{c.fit_p}</p>
+    <ul>
+      {c.rules.map((r) => <li><b>{r.label}</b>: {r.text}</li>)}
+    </ul>
+    <p>{c.verdict_intro} <span class="tag fit">{d.verdict_fit}</span> {c.verdict_fit} <span class="tag eligible">{d.verdict_eligible}</span> {c.verdict_eligible} <span class="tag not_yet">{d.verdict_not_yet}</span> {c.verdict_not_yet} <span class="tag no">{d.verdict_no}</span> {c.verdict_no} {c.verdict_outro}</p>
+
+    <h2>{c.gaps_h}</h2>
+    <p>{c.gaps_p}</p>
+
+    <h2>{c.model_h}</h2>
+    <p>{c.model_p}</p>
+    <ul>
+      {c.model_items.map((m) => <li><b>{m.label}</b> {m.text.replace("{model}", env.GEMINI_MODEL)}</li>)}
+    </ul>
+    <p>{c.model_outro}</p>
+
+    <h2>{c.privacy_h}</h2>
+    <p>{c.privacy_p}</p>
+
+    <h2>{c.not_h}</h2>
+    <ul>
+      {c.not_items.map((item) => <li>{item}</li>)}
+    </ul>
+
+    <h2>{c.oss_h}</h2>
+    <p>{c.oss_p}</p>
+  </div>
+</Base>

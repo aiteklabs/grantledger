@@ -1,0 +1,43 @@
+---
+import type { GrantView } from "~/lib/db";
+import { COUNTRY_NAMES, FUNDING_TYPE_LABELS, daysLeft, fmtDate, fmtMoney } from "~/lib/format";
+import { localePath, t } from "~/i18n";
+
+interface Props { grant: GrantView; locale?: string }
+const { grant: g, locale = "en" } = Astro.props;
+const d = t(locale);
+const left = daysLeft(g.closes_at);
+// A forthcoming call is dated by its opening, an open one by its deadline.
+const soon = g.status === "forthcoming" && g.opens_at;
+const opensIn = soon ? daysLeft(g.opens_at) : null;
+const statusLabel = { open: d.status_open, forthcoming: d.status_forthcoming, closed: d.status_closed, unknown: d.status_unknown }[g.status] ?? g.status;
+---
+<li>
+  <a class="row" href={localePath(locale, `/grants/${encodeURI(g.id)}`)}>
+    <div>
+      <div class="title">{g.title}</div>
+      <div class="meta">
+        <span class={`tag ${g.status}`}>{statusLabel}</span>
+        <span>{COUNTRY_NAMES[g.country] ?? g.country}</span>
+        {g.funder_name && <span>{g.funder_name}</span>}
+        {g.funding_types.slice(0, 3).map((f) => <span>{FUNDING_TYPE_LABELS[f] ?? f}</span>)}
+        {g.consortium && <span class={`tag ${g.consortium === "single" ? "fit" : "not_yet"}`}>{g.consortium === "single" ? d.consortium_single : d.consortium_required}</span>}
+      </div>
+    </div>
+    <div class="right">
+      {soon ? (
+        <>
+          <span class="dl">{d.opens} {fmtDate(g.opens_at)}</span>
+          {opensIn !== null && opensIn > 0 && <span>{d.in_days.replace("{days}", String(opensIn))}</span>}
+          {g.closes_at && <span style="display:block">{d.deadline} {fmtDate(g.closes_at)}</span>}
+        </>
+      ) : (
+        <>
+          {g.closes_at && <span class="dl">{fmtDate(g.closes_at)}</span>}
+          {left !== null && left >= 0 && g.status !== "closed" && <span>{d.days_left.replace("{days}", String(left))}</span>}
+        </>
+      )}
+      {g.budget_total ? <span style="display:block">{fmtMoney(g.budget_total, g.currency)}</span> : null}
+    </div>
+  </a>
+</li>

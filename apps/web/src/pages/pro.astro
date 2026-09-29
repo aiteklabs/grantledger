@@ -1,0 +1,51 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { PLANS, currentAccount } from "~/lib/account";
+import { t } from "~/i18n";
+export const prerender = false;
+
+const d = t(Astro.locals.locale);
+const account = await currentAccount(Astro.request, env);
+const fit = Astro.url.searchParams.get("fit") ?? "";
+const from = Astro.url.searchParams.get("from") ?? "";
+const error = Astro.url.searchParams.get("error") ?? "";
+const reasons: Record<string, string> = { prefill: d.pro_reason_prefill, find: d.pro_reason_find };
+---
+<Base title="Pro" description={d.pro_lead}>
+  <div class="wrap" style="padding-top:3rem;max-width:860px">
+    <span class="kicker">Pro</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{d.pro_title}</h1>
+    <p class="lead">{d.pro_lead}</p>
+    {reasons[from] && <p class="callout" style="border-left-color:var(--amber)">{reasons[from]}</p>}
+    {error === "email" && <p class="callout">{d.pro_bad_email}</p>}
+
+    {account && (
+      <p class="callout" style="border-left-color:var(--moss)">{d.pro_have.replace("{plan}", PLANS[account.plan].name).replace("{email}", account.email)} <a href="/me">{d.pro_your_profiles}</a>.{account.plan === "solo" && ` ${d.pro_upgrade}`}</p>
+    )}
+
+    <div class="stats" style="margin:2rem 0;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      {(["solo", "team"] as const).map((plan) => (
+        <div class={`stat ${plan === "team" ? "live" : ""}`} style="padding:1.6rem 1.4rem">
+          <div class="l" style="margin:0 0 0.4rem">{PLANS[plan].name}</div>
+          <div class="n">{PLANS[plan].eur} EUR<span style="font-size:0.4em;font-family:var(--font-body);color:var(--muted)"> {d.pro_once}</span></div>
+          <p style="margin:0.8rem 0 1rem"><b>{PLANS[plan].profiles === 1 ? d.pro_profiles_one : d.pro_profiles_n.replace("{n}", String(PLANS[plan].profiles))}.</b> {d.pro_features}</p>
+          {(!account || (account.plan === "solo" && plan === "team")) && (
+            <form method="post" action="/api/pro" class="form">
+              <input type="hidden" name="plan" value={plan} />
+              <input type="hidden" name="fit" value={fit} />
+              {account && <input type="hidden" name="email" value={account.email} />}
+              {!account && <div class="field"><label for={`email-${plan}`}>{d.pro_email}</label><input type="email" id={`email-${plan}`} name="email" required autocomplete="email" /></div>}
+              <div><button class="btn" type="submit">{d.pro_pay.replace("{eur}", String(PLANS[plan].eur))}</button></div>
+            </form>
+          )}
+        </div>
+      ))}
+    </div>
+    <p class="small muted">{d.pro_note}</p>
+
+    <h2>{d.pro_free_title}</h2>
+    <p>{d.pro_free_text}</p>
+    <p class="small muted"><a href="/login">{d.pro_signin}</a></p>
+  </div>
+</Base>
