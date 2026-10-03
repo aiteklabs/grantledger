@@ -21,7 +21,9 @@ import { itIncentivi } from "./it-incentivi";
 import { noForskningsradet } from "./no-forskningsradet";
 import { seVinnova } from "./se-vinnova";
 import { ukFindAGrant } from "./uk-find-a-grant";
+import { ukBrightonHove } from "./uk-brighton-hove";
 import { ukPrsFoundation } from "./uk-prs-foundation";
+import { ukSussexCf } from "./uk-sussex-cf";
 import { atAws } from "./at-aws";
 import { atFwf } from "./at-fwf";
 import { beBelspo } from "./be-belspo";
@@ -78,5 +80,7 @@ export const sources: Record<SourceId, Source> = {
   pt_fundo_ambiental: ptFundoAmbiental,
   lt_inovacijuagentura: ltInovacijuagentura,
   uk_prs_foundation: ukPrsFoundation,
+  uk_sussex_cf: ukSussexCf,
+  uk_brighton_hove: ukBrightonHove,
 };
 export type { Page, RawRecord, Source } from "./types";

@@ -119,6 +119,8 @@ export const SOURCE_NAMES: Record<string, string> = {
   pt_fundo_ambiental: "Portugal Fundo Ambiental",
   lt_inovacijuagentura: "Lithuania Inovacijų agentūra",
   uk_prs_foundation: "UK PRS Foundation",
+  uk_sussex_cf: "UK Sussex Community Foundation",
+  uk_brighton_hove: "UK Brighton & Hove City Council",
 };
 
 // What each feed covers, for the coverage register.
@@ -161,6 +163,8 @@ export const SOURCE_SCOPE: Record<string, string> = {
   pt_fundo_ambiental: "Fundo Ambiental calls from the current-year register and the PRR register, with deadlines, budgets and beneficiaries",
   lt_inovacijuagentura: "Lithuanian Innovation Agency funding calls: national and EU-funded instruments for startups, SMEs, research organisations and public bodies",
   uk_prs_foundation: "PRS Foundation funds for music creators, music organisations and industry professionals in the UK",
+  uk_sussex_cf: "Sussex Community Foundation main grants rounds and additional funds for community groups and individuals in Sussex",
+  uk_brighton_hove: "Brighton & Hove City Council Community Catalyst Fund for community and voluntary organisations",
 };
 
 export const FUNDING_TYPE_LABELS: Record<string, string> = {

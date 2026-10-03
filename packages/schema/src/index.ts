@@ -3,7 +3,7 @@ import { z } from "zod";
 // One record = one funding opportunity (a call, a topic, a scheme), as published by its source.
 // Arrays are stored as JSON text in D1. Dates are ISO 8601 strings in UTC.
 
-export const SourceId = z.enum(["eu_ft", "es_bdns", "fr_aides_entreprises", "us_grants_gov", "nl_rvo", "lt_esinvesticijos", "uk_find_a_grant", "it_incentivi", "se_vinnova", "fi_eura", "no_forskningsradet", "dk_tilskudspuljer", "at_ffg", "pt_portugal2030", "de_foerderinfo", "cz_dotaceeu", "gr_espa", "ie_enterprise_ireland", "ro_mfe", "pl_harmonogram", "be_1890", "be_innoviris", "be_vlaio", "at_aws", "at_fwf", "be_belspo", "dk_dff", "dk_innovationsfonden", "dk_kunstfond", "de_dfg", "ie_enterprise_hub", "ie_research_ireland", "no_innovasjonnorge", "no_tilskudd", "pt_fct", "pt_fundo_ambiental", "lt_inovacijuagentura", "uk_prs_foundation"]);
+export const SourceId = z.enum(["eu_ft", "es_bdns", "fr_aides_entreprises", "us_grants_gov", "nl_rvo", "lt_esinvesticijos", "uk_find_a_grant", "it_incentivi", "se_vinnova", "fi_eura", "no_forskningsradet", "dk_tilskudspuljer", "at_ffg", "pt_portugal2030", "de_foerderinfo", "cz_dotaceeu", "gr_espa", "ie_enterprise_ireland", "ro_mfe", "pl_harmonogram", "be_1890", "be_innoviris", "be_vlaio", "at_aws", "at_fwf", "be_belspo", "dk_dff", "dk_innovationsfonden", "dk_kunstfond", "de_dfg", "ie_enterprise_hub", "ie_research_ireland", "no_innovasjonnorge", "no_tilskudd", "pt_fct", "pt_fundo_ambiental", "lt_inovacijuagentura", "uk_prs_foundation", "uk_sussex_cf", "uk_brighton_hove"]);
 export type SourceId = z.infer<typeof SourceId>;
 
 export const FunderLevel = z.enum(["supranational", "national", "regional", "local", "unknown"]);

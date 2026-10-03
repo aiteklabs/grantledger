@@ -1,5 +1,5 @@
 import type { Grant } from "@grantledger/schema";
-import { fetchJson, mapLimit, num, statusFromDates, stripHtml } from "../util";
+import { fetchJson, londonIso, mapLimit, num, statusFromDates, stripHtml } from "../util";
 import type { Page, Source } from "./types";
 
 // UK, PRS Foundation (music funder): the "All Upcoming Deadlines" page is one table with every current fund (name, link,
@@ -41,12 +41,7 @@ function dates(text: string, hour: number): string[] {
   for (const m of found) {
     year = m[3] ?? year;
     if (!year) continue;
-    const month = MONTHS.indexOf((m[2] as string).toLowerCase());
-    const day = Number(m[1]);
-    // UK is UTC+1 from the last Sunday of March to the last Sunday of October.
-    const lastSunday = (mo: number) => { const end = new Date(Date.UTC(Number(year), mo + 1, 0)); return end.getUTCDate() - end.getUTCDay(); };
-    const summer = (month > 2 && month < 9) || (month === 2 && day >= lastSunday(2)) || (month === 9 && day < lastSunday(9));
-    out.push(new Date(Date.UTC(Number(year), month, day, hour - (summer ? 1 : 0))).toISOString());
+    out.push(londonIso(Number(year), MONTHS.indexOf((m[2] as string).toLowerCase()), Number(m[1]), hour));
   }
   return out;
 }
@@ -72,7 +67,7 @@ function normalize(row: Row, detail: WpPage | null): Grant {
     source_license: LICENSE,
     title: row.title,
     title_lang: "en",
-    summary: [text, row.opens ? `Application opens\n${row.opens}` : "", row.deadlines ? `Deadlines (6pm UK time unless stated)\n${row.deadlines}` : ""].filter(Boolean).join("\n\n").replace(/ /g, " ").replace(/\n[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n") || null,
+    summary: [text, row.opens ? `Application opens\n${row.opens}` : "", row.deadlines ? `Deadlines (6pm UK time unless stated)\n${row.deadlines}` : ""].filter(Boolean).join("\n\n").replace(/\u00a0/g, " ").replace(/\n[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n") || null,
     funder_name: "PRS Foundation",
     funder_level: "national",
     country: "GB",

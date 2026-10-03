@@ -56,6 +56,13 @@ export function statusFromDates(opens: string | null, closes: string | null, now
   return "unknown";
 }
 
+// A UK wall-clock time as ISO in UTC. The UK is UTC+1 from the last Sunday of March to the last Sunday of October.
+export function londonIso(year: number, month: number, day: number, hour: number, minute = 0): string {
+  const lastSunday = (m: number) => { const end = new Date(Date.UTC(year, m + 1, 0)); return end.getUTCDate() - end.getUTCDay(); };
+  const summer = (month > 2 && month < 9) || (month === 2 && day >= lastSunday(2)) || (month === 9 && day < lastSunday(9));
+  return new Date(Date.UTC(year, month, day, hour - (summer ? 1 : 0), minute)).toISOString();
+}
+
 // Some publishers (Akamai, Cloudflare WAF) fingerprint the TLS/HTTP client: fetch() gets 403, curl with HTTP/2
 // passes. On the local runner (Bun) fall back to curl; inside the Worker there is no fallback and the error says so.
 export async function fetchHtml(url: string, headers: Record<string, string>): Promise<string> {
