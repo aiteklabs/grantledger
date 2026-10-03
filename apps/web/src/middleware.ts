@@ -3,8 +3,21 @@ import { defaultLocale, locales } from "~/i18n";
 
 // Old hostname redirects permanently. A locale prefix (/fr/...) is stripped and remembered in locals, so one set
 // of pages serves every language.
+// Endpoints other origins post to by design: the OAuth token and registration endpoints (assistants exchange
+// codes server to server) and the MCP endpoint. Every other unsafe form post must come from this site.
+const CROSS_ORIGIN_OK = /^\/(api\/oauth\/|mcp(\/|$))/;
+const FORM_TYPES = ["application/x-www-form-urlencoded", "multipart/form-data", "text/plain"];
+
+function forbiddenCrossOrigin(request: Request, url: URL): boolean {
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method) || CROSS_ORIGIN_OK.test(url.pathname)) return false;
+  const sameOrigin = request.headers.get("origin") === url.origin;
+  const type = request.headers.get("content-type")?.toLowerCase();
+  return type ? FORM_TYPES.some((t) => type.includes(t)) && !sameOrigin : !sameOrigin;
+}
+
 export const onRequest = defineMiddleware((context, next) => {
   const url = new URL(context.request.url);
+  if (forbiddenCrossOrigin(context.request, url)) return new Response(`Cross-site ${context.request.method} form submissions are forbidden`, { status: 403 });
   // Every other hostname (old subdomains, www) redirects permanently to the canonical domain.
   if (url.hostname !== "grantledger.eu" && url.hostname !== "localhost" && !url.hostname.endsWith(".workers.dev")) {
     url.hostname = "grantledger.eu";

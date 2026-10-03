@@ -105,7 +105,7 @@ const admin = !account && (await isAdmin(Astro.request, env));
     <footer class="site-footer">
       <div class="wrap">
         <span><a href="https://aiteklabs.com" rel="noopener" style="text-decoration:none;font-weight:600">Aitek Labs</a> · {d.footer_text.replace("Built by Aitek Labs. ", "")}</span>
-        <span><a href="https://github.com/aiteklabs/grantledger" rel="noopener">Source code</a> · <a href="/pro">Pro</a> · <a href={L("/coverage")}>Coverage</a> · <a href="/methodology">Methodology</a> · <a href="/about">About</a> · <a href="/ai-notice">AI notice</a> · <a href="/privacy">Privacy</a> · <a href="/legal-notice">Legal notice</a> · <a href="/status">Status</a> · <a href="/sitemap.xml">Sitemap</a></span>
+        <span><a href="https://github.com/aiteklabs/grantledger" rel="noopener">Source code</a> · <a href="/pro">Pro</a> · <a href={L("/coverage")}>Coverage</a> · <a href="/methodology">Methodology</a> · <a href="/about">About</a> · <a href="/ai-notice">AI notice</a> · <a href="/assistant">Assistants</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/legal-notice">Legal notice</a> · <a href="/status">Status</a> · <a href="/sitemap.xml">Sitemap</a></span>
       </div>
       <div class="wrap facts mono small">
         <span>Ledger refreshed {facts.refreshed ? fmtDate(facts.refreshed) : "never"}</span>

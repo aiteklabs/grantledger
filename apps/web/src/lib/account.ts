@@ -11,6 +11,10 @@ export interface Account {
   tax_id: string | null;
   last_login_at: string | null;
   plan: Plan;
+  // Personal key for the assistants (MCP and JSON API). Null until the account page is first opened.
+  api_key: string | null;
+  // "Disconnect all assistants": OAuth tokens issued at or before this instant are dead.
+  mcp_revoked_at: string | null;
 }
 
 // Solo: one company profile. Team: three. Both lifetime.
@@ -47,8 +51,18 @@ export async function sessionCookie(env: Env, email: string): Promise<string> {
   return `${COOKIE}=${payload}.${sig}; Path=/; Max-Age=${SESSION_DAYS * 86_400}; HttpOnly; Secure; SameSite=Lax`;
 }
 
-// A post-login destination must be a plain internal path: no protocol-relative or absolute URLs.
-export const safeNext = (next: string | null | undefined, fallback = "/me") => (next && /^\/(?!\/)[\w\-./?=&%#]*$/.test(next) ? next : fallback);
+// A post-login destination must be a path on this site: starts with one slash, no other origin, no control
+// characters, no backslash. The query keeps every character a client may put there (an OAuth request carries
+// colons, plus signs and encoded URLs).
+export function safeNext(next: string | null | undefined, fallback = "/me"): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || /[\s\\\u0000-\u001f]/.test(next)) return fallback;
+  try {
+    const u = new URL(next, "https://grantledger.eu");
+    return u.origin === "https://grantledger.eu" && u.pathname + u.search + u.hash === next ? next : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export const clearCookie = `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 
@@ -66,6 +80,32 @@ export async function currentAccount(request: Request, env: Env): Promise<Accoun
   } catch {
     return null;
   }
+}
+
+// The paid account holding this key, or null. Keys look like gl_<48 hex>.
+export async function accountByKey(db: D1Database, key: string): Promise<Account | null> {
+  if (!/^gl_[0-9a-f]{48}$/.test(key)) return null;
+  return (await db.prepare("SELECT * FROM accounts WHERE api_key = ? AND paid_at IS NOT NULL").bind(key).first<Account>()) ?? null;
+}
+
+// A new key for the account; the old one stops working at once. With onlyIfMissing, the first visit creates the
+// key exactly once even when two requests race, and both get the stored one.
+export async function rotateApiKey(db: D1Database, email: string, onlyIfMissing = false): Promise<string> {
+  const key = `gl_${randomToken()}`;
+  await db.prepare(`UPDATE accounts SET api_key = ? WHERE email = ?${onlyIfMissing ? " AND api_key IS NULL" : ""}`).bind(key, email).run();
+  if (!onlyIfMissing) return key;
+  const row = await db.prepare("SELECT api_key FROM accounts WHERE email = ?").bind(email).first<{ api_key: string | null }>();
+  return row?.api_key ?? key;
+}
+
+// For the OAuth layer: undefined when no paid account, else the revocation instant or null.
+export async function revokedAt(db: D1Database, email: string): Promise<string | null | undefined> {
+  const row = await db.prepare("SELECT mcp_revoked_at FROM accounts WHERE email = ? AND paid_at IS NOT NULL").bind(email).first<{ mcp_revoked_at: string | null }>();
+  return row ? row.mcp_revoked_at : undefined;
+}
+
+export async function disconnectAssistants(db: D1Database, email: string): Promise<void> {
+  await db.prepare("UPDATE accounts SET mcp_revoked_at = ? WHERE email = ?").bind(new Date().toISOString(), email).run();
 }
 
 export async function getAccount(db: D1Database, email: string): Promise<Account | null> {

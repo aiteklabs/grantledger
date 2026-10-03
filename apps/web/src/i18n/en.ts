@@ -139,6 +139,8 @@ export const en = {
   me_receipts: "Receipts and invoices come from Stripe.",
   me_change: "To change the email or for a refund, write to contact@aiteklabs.com.",
   me_signout: "Sign out",
+  me_assistant: "Use your profiles in ChatGPT or Claude:",
+  me_assistant_link: "how it works",
   footer_text: "Built by Aitek Labs. Open source (MIT), open data (CC0). Every record links to its official publisher.",
 } as const;
 

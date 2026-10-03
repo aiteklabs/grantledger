@@ -1,0 +1,44 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "grantledger",
+  "version": "1.0.0",
+  "description": "Public funding across Europe: search the open ledger of grants, loans, guarantees and tax credits, and reason over your GrantLedger Pro screening result.",
+  "author": {
+    "name": "Aitek Labs",
+    "url": "https://aiteklabs.com"
+  },
+  "homepage": "https://grantledger.eu/assistant",
+  "repository": "https://github.com/aiteklabs/grantledger",
+  "license": "MIT",
+  "keywords": [
+    "grants",
+    "public funding",
+    "europe",
+    "subsidies",
+    "eu funding"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "GrantLedger",
+        "shortDescription": "Public funding across Europe",
+        "longDescription": "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits published by official bodies in 21 European countries and EU-wide programmes, collected every night from official sources and searchable in any language. Ask which calls fund an industrial SME in Spain, what a loan guarantee in Germany requires, or which EU programmes fit a deep-tech startup; every answer links the official publisher page. Pro accounts can paste the link of their GrantLedger screening result: the assistant reads the company profile they confirmed and every call screened for it with the rule each verdict relies on, then ranks, explains gaps and compares calls. Verdicts come from fixed rules on grantledger.eu, never from the model. Sign in with your GrantLedger Pro account when ChatGPT asks. Read only: the plugin cannot change your profiles or your account.",
+        "developerName": "Aitek Labs",
+        "category": "Finance",
+        "capabilities": [
+          "Search public funding calls across Europe by text, country, status and type",
+          "Read the full record of a call with the official publisher link",
+          "Read a GrantLedger screening result from its link and explain each verdict",
+          "Rank, compare and explain calls for a company profile"
+        ],
+        "websiteURL": "https://grantledger.eu/assistant",
+        "supportURL": "https://grantledger.eu/legal-notice",
+        "privacyPolicyURL": "https://grantledger.eu/privacy",
+        "termsOfServiceURL": "https://grantledger.eu/terms",
+        "brandColor": "#E4572E",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}

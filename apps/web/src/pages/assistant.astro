@@ -1,0 +1,92 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { currentAccount, rotateApiKey } from "~/lib/account";
+import { listProfiles } from "~/lib/radar";
+export const prerender = false;
+
+// How a Pro account uses the ledger and its screening results from ChatGPT, Claude or any MCP client. English
+// only: the assistants read English tool descriptions, and the page mostly quotes URLs.
+const account = await currentAccount(Astro.request, env);
+const profiles = account ? await listProfiles(env.DB, account.email) : [];
+// The personal key (for tools without OAuth) is made on the first visit, so the page always has a link to show.
+const key = account ? (account.api_key ?? (await rotateApiKey(env.DB, account.email, true))) : null;
+const site = env.SITE_URL;
+const mcpUrl = `${site}/mcp`;
+const keyUrl = key ? `${site}/mcp/${key}` : `${site}/mcp/<your-key>`;
+const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.url.searchParams.get("disconnected") === "1" ? "disconnected" : "";
+---
+<Base title="GrantLedger in ChatGPT and Claude" description="Search the open ledger of public funding and reason over your screening result from ChatGPT, Claude or any MCP client. One address, sign in with your Pro account." noindex={!!account}>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">Assistants · Pro</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">GrantLedger in ChatGPT and Claude</h1>
+    <p class="lead">Ask an assistant which calls fit a startup in Portugal, what a loan guarantee in Germany requires, or what to apply to first from your own screening. It reads the same ledger as this site and links every answer to the official publisher page.</p>
+
+    <h2>One address, then sign in</h2>
+    <p>GrantLedger is a Model Context Protocol (MCP) server. Add this address as a connector; the assistant opens a GrantLedger page where you sign in with your Pro email (a link by email, no password) and click Allow. No key to copy.</p>
+    <pre class="callout mono" style="margin:1rem 0"><code>{mcpUrl}</code></pre>
+    {flag === "disconnected" && <p class="callout" style="border-left-color:var(--moss)">Every assistant is disconnected. Each one asks you to sign in again on its next use.</p>}
+    {!account && <p><a class="btn" href="/pro">Get Pro</a> <span class="small muted" style="margin-left:0.8rem">One payment, no subscription. No account yet? The sign-in page offers Pro too, and brings you back once paid.</span></p>}
+    <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT. Read only. Sixty requests per minute.</p>
+
+    <h3>ChatGPT</h3>
+    <ol>
+      <li>Settings, Security and login: turn on Developer mode.</li>
+      <li>Plugins, Add, Create MCP App. Name GrantLedger, paste the address, authentication: OAuth. ChatGPT sends you to the sign-in page, then lists GrantLedger among your plugins.</li>
+      <li>In a chat, enable GrantLedger and ask. Deep research also uses it through <span class="mono">search</span> and <span class="mono">fetch</span>.</li>
+    </ol>
+    <h3>Claude</h3>
+    <ol>
+      <li>Settings, Connectors, Add custom connector. Name GrantLedger, paste the address, Connect, sign in.</li>
+      <li>Claude Code, in a terminal, then <span class="mono">/mcp</span> to sign in:</li>
+    </ol>
+    <pre class="callout mono" style="margin:1rem 0"><code>claude mcp add --transport http grantledger {mcpUrl}</code></pre>
+    <h3>Cursor, Codex, Windsurf, Zed</h3>
+    <p>Same address as a streamable HTTP server; each opens the sign-in page on first use.</p>
+
+    <h2>Your screening in the chat</h2>
+    <p>Screen your company on this site, then paste the result link in the chat. The link looks like this:</p>
+    <pre class="callout mono" style="margin:1rem 0"><code>{site}/fit/&lt;id&gt;</code></pre>
+    <p>The assistant calls <span class="mono">get_fit</span> and receives the profile you confirmed and every call screened for it with the rule each verdict relies on. Then ask it to rank, explain a gap, draft a first email to the funder, or compare two calls.</p>
+    {account && profiles.length > 0 && (
+      <p class="callout" style="border-left-color:var(--moss)">Your links: {profiles.map((p, i) => <><span class="mono">{site}/fit/{p.fit_check_id}</span>{i < profiles.length - 1 ? " · " : ""}</>)}</p>
+    )}
+
+    {account && (
+      <>
+        <h2>Disconnect</h2>
+        <p>Every assistant you allowed keeps a token that renews on its own. This kills all of them at once; each asks you to sign in again on its next use.</p>
+        <form method="post" action="/api/key" onsubmit="return confirm('Disconnect every assistant now?')"><input type="hidden" name="action" value="disconnect" /><button class="btn ghost" type="submit">Disconnect every assistant</button></form>
+      </>
+    )}
+
+    <h2>Tools without OAuth</h2>
+    <p>A script, a JSON client or an older tool that cannot sign in takes your personal link instead. It carries your key, so keep it to yourself.</p>
+    {account ? (
+      <>
+        {flag === "rotated" && <p class="callout" style="border-left-color:var(--moss)">New key made. Update the link wherever the old one was.</p>}
+        <pre class="callout mono" style="margin:1rem 0"><code>{keyUrl}</code></pre>
+        <form method="post" action="/api/key" onsubmit="return confirm('Make a new key? The current link stops working everywhere.')"><input type="hidden" name="action" value="rotate" /><button class="btn ghost" type="submit">Make a new key</button></form>
+      </>
+    ) : (
+      <p class="small muted"><a href="/login?next=/assistant">Sign in</a> to see your personal link.</p>
+    )}
+    <p class="small muted">The plain JSON API is described in <a href="/openapi.json">openapi.json</a> (OpenAPI 3.1) and takes the key or an OAuth token as a bearer: <span class="mono">/api/grants.json</span>, <span class="mono">/api/grant.json</span> and <span class="mono">/fit/{"{id}"}.json</span>.</p>
+
+    <h2>What the assistant can and cannot do</h2>
+    <ul>
+      <li>Verdicts come from fixed rules on this site, never from the assistant. It reads them; it does not decide them.</li>
+      <li>The ledger holds what official sources publish. If a call is not in the results, it is not in the ledger; ask the assistant to say so rather than guess.</li>
+      <li>Access is read only. An assistant cannot change your profiles, your account or your payment.</li>
+      <li>The connector sends nothing to us except the queries and the ids it looks up. See the <a href="/privacy">privacy notice</a>.</li>
+    </ul>
+
+    <h2>Questions that work well</h2>
+    <ul>
+      <li>"Which open calls in Spain fund industrial SMEs buying machines? Link the official pages."</li>
+      <li>"EU-wide programmes for a deep-tech startup under three years old, deadline after next month."</li>
+      <li>"Which three calls should I apply to first and why? My screening: {site}/fit/&lt;id&gt;"</li>
+      <li>"For the second call, what does 'to check' mean and what document proves it?"</li>
+    </ul>
+  </div>
+</Base>

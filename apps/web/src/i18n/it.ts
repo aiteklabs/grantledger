@@ -140,5 +140,7 @@ export const it: Dictionary = {
   me_receipts: "Ricevute e fatture arrivano da Stripe.",
   me_change: "Per cambiare email o per un rimborso, scrivete a contact@aiteklabs.com.",
   me_signout: "Esci",
+  me_assistant: "Usa i tuoi profili in ChatGPT o Claude:",
+  me_assistant_link: "come funziona",
   footer_text: "Creato da Aitek Labs. Open source (MIT), dati aperti (CC0). Ogni scheda rimanda al suo editore ufficiale.",
 };
