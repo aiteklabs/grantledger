@@ -60,7 +60,9 @@ function normalize(row: Row, detail: WpPage | null): Grant {
   const opens = closes ? dates(row.opens, 0).sort().filter((o) => new Date(o).getTime() + 86_400_000 <= new Date(closes).getTime()).at(-1) ?? null : null;
   const rolling = /rolling/i.test(row.deadlines);
   const text = detail ? stripHtml(detail.content.rendered) : "";
-  // "grants of up to £5000", "up to £15k".
+  // "grants of £5k-£15k", "up to £8,000 – £15,000", else "grants of up to £5000", "up to £5k".
+  const pounds = (n: string | undefined, k: string | undefined) => (n ? (num(n.replace(/,/g, "")) ?? 0) * (k ? 1000 : 1) || null : null);
+  const range = text.match(/£\s?([\d,.]+)\s*(k\b)?\s*(?:-|–|—|to)\s*£\s?([\d,.]+)\s*(k\b)?/i);
   const upTo = text.match(/up to £\s?([\d,.]+)\s*(k\b)?/i);
   return {
     id: `uk_prs_foundation:${row.id}`,
@@ -78,8 +80,8 @@ function normalize(row: Row, detail: WpPage | null): Grant {
     funding_types: ["grant"],
     beneficiary_types: row.link.includes("/funding-for-organisations/") ? ["ngo", "company"] : ["individual"],
     sectors: ["music"],
-    amount_min: null,
-    amount_max: upTo ? (num((upTo[1] as string).replace(/,/g, "")) ?? 0) * (upTo[2] ? 1000 : 1) || null : null,
+    amount_min: range ? pounds(range[1], range[2]) : null,
+    amount_max: range ? pounds(range[3], range[4]) : pounds(upTo?.[1], upTo?.[2]),
     budget_total: null,
     currency: "GBP",
     status: rolling ? "open" : statusFromDates(opens, closes),
