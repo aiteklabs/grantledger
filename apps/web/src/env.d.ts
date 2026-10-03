@@ -22,6 +22,15 @@ declare namespace Cloudflare {
     STRIPE_TEAM_LINK: string;
     STRIPE_WEBHOOK_SECRET?: string;
     MAIL_FROM: string;
+    // Link of the public GrantLedger GPT once created in the ChatGPT builder; the /assistant page shows it when set.
+    CHATGPT_GPT_URL?: string;
+    // OpenAI plugin directory: domain verification token served at /.well-known/openai-apps-challenge.
+    OPENAI_APPS_CHALLENGE?: string;
+    // Reviewer door for the plugin directories: the review account and the code that signs it in (secret).
+    REVIEW_EMAIL?: string;
+    REVIEW_TOKEN?: string;
+    // Workers rate limiting for the public JSON API and the MCP endpoint, per client IP.
+    API_RL?: RateLimit;
   }
 }
 

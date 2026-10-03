@@ -43,6 +43,7 @@ const saved = Astro.url.searchParams.get("saved") === "1";
       </table>
     )}
 
+    {profiles.length > 0 && <p class="small muted">{d.me_assistant} <a href="/assistant">{d.me_assistant_link}</a></p>}
     {profiles.length < limit && <p style="margin-top:1.5rem"><a class="btn" href="/find">{d.me_add}</a><span class="muted small" style="margin-left:0.8rem">{d.me_add_note}</span></p>}
 
     <h2 style="margin-top:2.5rem">{d.me_account}</h2>

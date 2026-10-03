@@ -11,4 +11,7 @@ export default defineConfig({
     routing: { prefixDefaultLocale: false },
   },
   trailingSlash: "never",
+  // The cross-site form check moves to src/middleware.ts: the OAuth token and registration endpoints and the MCP
+  // endpoint are called by other origins by design, every other form keeps the check.
+  security: { checkOrigin: false },
 });

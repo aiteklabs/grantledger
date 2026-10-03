@@ -32,6 +32,8 @@ export interface GrantRow {
   last_seen_at: string;
   // Enrichment's consortium flag, when the query joins grant_enrichments. Fallback for sources that do not state it.
   e_consortium_required?: number | null;
+  // Enrichment's English summary, for the JSON API and the assistants.
+  e_summary_en?: string | null;
 }
 
 export interface GrantView extends Omit<GrantRow, "regions" | "funding_types" | "beneficiary_types" | "sectors" | "documents" | "consortium"> {
@@ -56,7 +58,7 @@ export function toView(r: GrantRow): GrantView {
 }
 
 // Columns every grant view needs: the row plus enrichment's consortium flag.
-const VIEW_SELECT = "g.*, e.consortium_required AS e_consortium_required";
+const VIEW_SELECT = "g.*, e.consortium_required AS e_consortium_required, e.summary_en AS e_summary_en";
 // Only the enrichment of the current content version: a changed call waits for its re-enrichment.
 const VIEW_JOIN = "LEFT JOIN grant_enrichments e ON e.grant_id = g.id AND e.content_hash = g.content_hash";
 

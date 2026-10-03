@@ -140,5 +140,7 @@ export const nl: Dictionary = {
   me_receipts: "Bonnen en facturen komen van Stripe.",
   me_change: "Voor een ander e-mailadres of een terugbetaling, schrijf naar contact@aiteklabs.com.",
   me_signout: "Uitloggen",
+  me_assistant: "Gebruik uw profielen in ChatGPT of Claude:",
+  me_assistant_link: "zo werkt het",
   footer_text: "Gebouwd door Aitek Labs. Open source (MIT), open data (CC0). Elke fiche linkt naar zijn officiële uitgever.",
 };

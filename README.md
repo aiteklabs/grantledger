@@ -10,6 +10,7 @@ Code MIT, normalised data CC0 (see `DATA_LICENSE.md`). Every record links to the
 - **Screening (Pro)**: a structured company profile (country, region, entity type, size, age, stage, NACE sectors, instruments, keywords) is matched against every current call with fixed rules. Each verdict lists the rule it relies on. Readiness gaps and negative memos per call. No model in the request path.
 - **AI prefill (Pro)**: a website, PDF or paragraph is read by Gemini through Cloudflare AI Gateway to prefill the profile form. The user confirms every field before screening.
 - **Radar (Pro)**: saved company profiles are screened again every Monday; an email lists the calls that appeared since the last one and pass the rules.
+- **Assistants (Pro)**: an MCP server at `/mcp` (streamable HTTP) with `search_grants`, `get_grant` and `get_fit`, plus ChatGPT's `search` and `fetch`. Sign-in is OAuth 2.1 served by the site itself (`src/lib/oauth.ts`: RFC 8414 metadata, dynamic client registration, PKCE, refresh rotation, stateless signed tokens, single use through `oauth_uses`): the assistant opens `/oauth/authorize`, the user signs in with the magic link or pays for Pro and lands back, clicks Allow. A personal key (`/mcp/<key>`, bearer on the JSON API) covers tools without OAuth. A pasted `/fit/{id}` link lets the assistant reason over that screening. Sixty requests per minute per client. `plugins/grantledger` is the ChatGPT and Codex plugin package.
 - **Enrichment**: every current call gets an English summary, English search terms and structured eligibility fields extracted offline by the model, once per content version, so English keywords reach calls published in any language.
 
 Pro is one payment through Stripe: Solo (one company profile) or Team (three). Accounts sign in with a magic link; there is no password.
@@ -48,10 +49,10 @@ One adapter file per feed in `packages/ingest/src/sources/`, registered in `inde
 | Romania | MIPE announcements |
 | Spain | BDNS |
 | Sweden | Vinnova |
-| United Kingdom | Find a grant |
+| United Kingdom | Find a grant, PRS Foundation |
 | United States | Grants.gov |
 
-Access is an official API, open data export, RSS or JSON where one exists, server-rendered HTML otherwise. Publishers that answer Cloudflare egress with a bot challenge run from the GitHub Actions runner (`runner: "local"` on the adapter): Vinnova and VLAIO today. FFG (Austria) blocks every datacenter IP and is not refreshed. Förderdatenbank des Bundes (Radware bot manager, 30 second crawl delay) and EuroAccess (terms forbid database storage) are not crawled.
+Access is an official API, open data export, RSS or JSON where one exists, server-rendered HTML otherwise. Publishers that answer Cloudflare egress with a bot challenge run from the GitHub Actions runner (`runner: "local"` on the adapter): Vinnova and VLAIO today. FFG (Austria) blocks every datacenter IP and is not refreshed. Förderdatenbank des Bundes (Radware bot manager, 30 second crawl delay), EuroAccess (terms forbid database storage) and Arts Council England (Cloudflare JavaScript challenge on every request) are not crawled.
 
 The archive starts on 2026-09-29: a call first seen after its deadline, already closed, or without any dates never enters the ledger. Calls seen while current stay when they close, with every content change kept in `grant_versions` and the raw payloads in R2 under `raw/{source}/{id}/{content_hash}.json`.
 

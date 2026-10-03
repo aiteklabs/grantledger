@@ -1,0 +1,111 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { PLANS, currentAccount } from "~/lib/account";
+import { issueCode, openDecision, readAuthorizeParams, sealDecision } from "~/lib/oauth";
+export const prerender = false;
+
+// The OAuth authorize step an assistant sends the user through. Three states on one page: not signed in (email
+// form for the magic link, and the Pro offer for a visitor without an account), signed in (consent), and the POST
+// of the consent form (mints the code and sends the browser back to the assistant).
+const turnstile = env.TURNSTILE_SITE_KEY;
+const selfUrl = `/oauth/authorize${Astro.url.search}`;
+let error = "";
+let expired = false;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const decision = await openDecision(env, String(form.get("blob") ?? ""));
+  if (!decision) {
+    expired = true;
+  } else {
+    const account = await currentAccount(Astro.request, env);
+    if (!account || account.email !== decision.sub) {
+      error = "Your session changed. Restart the connection from your assistant.";
+    } else {
+      const back = new URL(decision.ru);
+      if (form.get("approve") === "yes") back.searchParams.set("code", await issueCode(env, decision));
+      else back.searchParams.set("error", "access_denied");
+      if (decision.st) back.searchParams.set("state", decision.st);
+      return Astro.redirect(back.toString(), 302);
+    }
+  }
+}
+
+const params = await readAuthorizeParams(env, Astro.url.searchParams);
+const account = typeof params === "string" ? null : await currentAccount(Astro.request, env);
+const appName = typeof params === "string" ? "" : params.client.n || new URL(params.redirectUri).hostname;
+const blob = account && typeof params !== "string" ? await sealDecision(env, params, account.email) : "";
+const sent = Astro.url.searchParams.get("sent") === "1";
+const loginError = Astro.url.searchParams.get("error") ?? "";
+// Sign-in and payment leave the page; the magic link brings the browser back here through this cookie.
+if (typeof params !== "string" && !account) Astro.cookies.set("gl_next", selfUrl, { path: "/", maxAge: 1800, httpOnly: true, secure: true, sameSite: "lax" });
+---
+<Base title="Connect an assistant" noindex={true}>
+  {turnstile && !account && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
+  <div class="wrap" style="padding-top:3rem;max-width:640px">
+    <span class="kicker">Assistants · Pro</span>
+    {typeof params === "string" ? (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Invalid request</h1>
+        <p class="lead">{params}</p>
+        <p class="small muted">Restart the connection from your assistant. If it keeps failing, write to contact@aiteklabs.com.</p>
+      </>
+    ) : expired ? (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Request expired</h1>
+        <p class="lead">This connection request is older than ten minutes. Restart it from your assistant.</p>
+      </>
+    ) : account ? (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Connect {appName} to GrantLedger</h1>
+        <p class="lead">Signed in as <b>{account.email}</b>, {PLANS[account.plan].name}.</p>
+        {error && <p class="callout">{error}</p>}
+        <p>{appName} will be able to:</p>
+        <ul>
+          <li>Search the ledger of public funding calls and read any record</li>
+          <li>Read the screening results whose link you paste in the chat</li>
+        </ul>
+        <p class="small muted">Read only. It cannot change your profiles, your account or your payment.</p>
+        <form method="post" action={selfUrl} style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:1.2rem">
+          <input type="hidden" name="blob" value={blob} />
+          <button class="btn" type="submit" name="approve" value="yes">Allow</button>
+          <button class="btn ghost" type="submit" name="approve" value="no">Deny</button>
+        </form>
+        <p class="small muted" style="margin-top:1.5rem">Disconnect every assistant at any time from <a href="/assistant">your assistants page</a>. Access tokens expire after one hour and renew on their own.</p>
+      </>
+    ) : sent ? (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Check your email</h1>
+        <p class="lead">Open the sign-in link we sent. It brings you back here to finish connecting {appName}. The link works once and expires in 30 minutes.</p>
+      </>
+    ) : (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Connect {appName} to GrantLedger</h1>
+        <p class="lead">Sign in with the email of your Pro account. We send a link, no password.</p>
+        {loginError === "email" && <p class="callout">That does not look like an email address.</p>}
+        {loginError === "captcha" && <p class="callout">The captcha did not pass. Try again.</p>}
+        {loginError === "code" && <p class="callout">Unknown access code.</p>}
+        <form method="post" action="/api/login" class="form" style="max-width:480px">
+          <div class="field"><label for="email">Email</label><input type="email" id="email" name="email" required autocomplete="email" /></div>
+          <input type="hidden" name="next" value={selfUrl} />
+          <input type="hidden" name="from" value="oauth" />
+          {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
+          <div><button class="btn" type="submit">Send the sign-in link</button></div>
+        </form>
+        {env.REVIEW_EMAIL && env.REVIEW_TOKEN && (
+          <details style="margin-top:1.5rem"><summary class="small muted">Have an access code?</summary>
+            <form method="post" action="/api/review-login" class="form" style="max-width:480px;margin-top:0.8rem">
+              <div class="field"><label for="code">Access code</label><input type="password" id="code" name="code" required autocomplete="off" /></div>
+              <input type="hidden" name="next" value={selfUrl} />
+              <div><button class="btn ghost" type="submit">Use access code</button></div>
+            </form>
+          </details>
+        )}
+        <h2 style="margin-top:2.5rem">No Pro account yet?</h2>
+        <p>Assistants are part of Pro: one payment, no subscription. {PLANS.solo.name} {PLANS.solo.eur} EUR for one company profile, {PLANS.team.name} {PLANS.team.eur} EUR for three. Pay, open the welcome email, and you land back here.</p>
+        <p><a class="btn" href="/pro">Get Pro</a></p>
+      </>
+    )}
+  </div>
+</Base>
