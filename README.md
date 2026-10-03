@@ -49,7 +49,7 @@ One adapter file per feed in `packages/ingest/src/sources/`, registered in `inde
 | Romania | MIPE announcements |
 | Spain | BDNS |
 | Sweden | Vinnova |
-| United Kingdom | Find a grant, PRS Foundation |
+| United Kingdom | Find a grant, PRS Foundation, Sussex Community Foundation, Brighton & Hove City Council |
 | United States | Grants.gov |
 
 Access is an official API, open data export, RSS or JSON where one exists, server-rendered HTML otherwise. Publishers that answer Cloudflare egress with a bot challenge run from the GitHub Actions runner (`runner: "local"` on the adapter): Vinnova and VLAIO today. FFG (Austria) blocks every datacenter IP and is not refreshed. Förderdatenbank des Bundes (Radware bot manager, 30 second crawl delay), EuroAccess (terms forbid database storage) and Arts Council England (Cloudflare JavaScript challenge on every request) are not crawled.
