@@ -43,3 +43,4 @@ license, recorded per source below and in `source_license` on every record.
 | `pt_fct` | FCT, Fundação para a Ciência e a Tecnologia | Public call information | Concursos listing plus call pages. |
 | `pt_fundo_ambiental` | Fundo Ambiental (Agência para o Clima, I.P.) | Public call notices | Current-year and PRR registers plus call pages. |
 | `lt_inovacijuagentura` | Inovacijų agentūra (Lithuanian Innovation Agency) | Public call information | Public list endpoint plus call page payloads. |
+| `uk_prs_foundation` | PRS Foundation (UK music funder) | Public funding programme information | WordPress REST API: deadlines page plus fund pages. |

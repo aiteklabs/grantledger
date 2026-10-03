@@ -21,6 +21,7 @@ import { itIncentivi } from "./it-incentivi";
 import { noForskningsradet } from "./no-forskningsradet";
 import { seVinnova } from "./se-vinnova";
 import { ukFindAGrant } from "./uk-find-a-grant";
+import { ukPrsFoundation } from "./uk-prs-foundation";
 import { atAws } from "./at-aws";
 import { atFwf } from "./at-fwf";
 import { beBelspo } from "./be-belspo";
@@ -76,5 +77,6 @@ export const sources: Record<SourceId, Source> = {
   pt_fct: ptFct,
   pt_fundo_ambiental: ptFundoAmbiental,
   lt_inovacijuagentura: ltInovacijuagentura,
+  uk_prs_foundation: ukPrsFoundation,
 };
 export type { Page, RawRecord, Source } from "./types";
