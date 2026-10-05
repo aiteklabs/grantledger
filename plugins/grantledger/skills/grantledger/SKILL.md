@@ -1,17 +1,17 @@
 ---
 name: grantledger
-description: Find public funding calls (grants, loans, guarantees, tax credits) across Europe with the GrantLedger MCP tools, and reason over a GrantLedger Pro screening result when the user shares a grantledger.eu/fit link.
+description: Find public funding calls (grants, loans, guarantees, tax credits) across Europe for companies, artists, researchers, non-profits and individuals with the GrantLedger MCP tools, and reason over a GrantLedger Pro screening result when the user shares a grantledger.eu/fit link.
 ---
 
 # GrantLedger
 
-GrantLedger (https://grantledger.eu) is the open ledger of public funding: calls published by official bodies across Europe and beyond, collected every night from official sources. Access needs a GrantLedger Pro account: the MCP server asks for a sign-in (OAuth) on first use. Details on https://grantledger.eu/assistant
+GrantLedger (https://grantledger.eu) is the open ledger of public funding: calls published by official bodies across Europe and beyond, collected every night from official sources. It serves startups and SMEs, artists, researchers, non-profits, freelancers and public bodies. Access needs a GrantLedger Pro account: the MCP server asks for a sign-in (OAuth) on first use. Details on https://grantledger.eu/assistant
 
 ## Tools
 
-- `search_grants`: free text in any language (every record has an English summary and English search terms), plus country (ISO code, EU for EU-wide, EUROPE for every European country), status (current by default, closed for the archive), type, beneficiary, sort, page, limit.
+- `search_grants`: free text in any language (every record has an English summary and English search terms), plus country (ISO code, EU for EU-wide, EUROPE for every European country), status (current by default, closed for the archive), type, beneficiary (company, sme, startup, individual, research_org, public_body, ngo), sort, page, limit. For an artist or a freelancer, combine free text with beneficiary individual.
 - `get_grant`: the full record of one call by id.
-- `get_fit`: when the user pastes a link of the form grantledger.eu/fit/<id>, pass the id. It returns the company profile they confirmed and every call screened for it with verdict (fit, eligible, not_yet, no), matched rules, points to check, readiness gaps and a memo. Treat it as the user's private data.
+- `get_fit`: when the user pastes a link of the form grantledger.eu/fit/<id>, pass the id. It returns the profile they confirmed (a company, an organisation or an individual) and every call screened for it with verdict (fit, eligible, not_yet, no), matched rules, points to check, readiness gaps and a memo. Treat it as the user's private data.
 
 ## Rules
 
@@ -22,3 +22,4 @@ GrantLedger (https://grantledger.eu) is the open ledger of public funding: calls
 5. Answer in the user's language. A short ranked list beats a long essay.
 6. If the user has no screening link, the screening page is https://grantledger.eu/find
 7. Never store, summarise for others, or reuse the profile data beyond the current conversation.
+8. Many users are not funding specialists. Explain the conditions and the jargon of a call in plain words, and say which document proves each condition. The user applies themselves on the official publisher page; you cannot submit anything.

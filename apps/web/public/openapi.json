@@ -206,7 +206,7 @@
       "get": {
         "operationId": "getScreening",
         "summary": "A Pro screening result by its private link id",
-        "description": "The confirmed company profile and every call screened for it: verdict (fit, eligible, not_yet, no), rules matched, points to check, readiness gaps, memo. The id is the UUID of the grantledger.eu/fit/<id> link the user shares. Private data of that user.",
+        "description": "The confirmed profile (a company, an organisation or an individual) and every call screened for it: verdict (fit, eligible, not_yet, no), rules matched, points to check, readiness gaps, memo. The id is the UUID of the grantledger.eu/fit/<id> link the user shares. Private data of that user.",
         "parameters": [
           {
             "name": "id",
@@ -234,7 +234,7 @@
                     },
                     "form": {
                       "type": "object",
-                      "description": "The confirmed company profile."
+                      "description": "The confirmed profile: a company, an organisation or an individual."
                     },
                     "summary": {
                       "type": "object",

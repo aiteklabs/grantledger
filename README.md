@@ -1,19 +1,19 @@
 # grantledger
 
-The open ledger of public funding. Grants, loans, guarantees and tax credits published by public bodies across Europe and beyond, collected every night from official sources, normalised into one schema, searchable in eight languages, and screened against a company profile with rules you can read. Live at https://grantledger.eu.
+The open ledger of public funding. Grants, loans, guarantees and tax credits published by public bodies across Europe and beyond, collected every night from official sources, normalised into one schema, searchable in eight languages, and screened against the profile of a company, an organisation or an individual with rules you can read. Live at https://grantledger.eu.
 
 Code MIT, normalised data CC0 (see `DATA_LICENSE.md`). Every record links to the official publisher page and keeps the publisher's license.
 
 ## What it does
 
 - **Ledger**: about 22,000 current calls from 35 official feeds in 21 countries plus EU-wide programmes. Free to browse and search. Country landing pages, a coverage register with the state of every feed, a status page, sitemaps and hreflang for every locale.
-- **Screening (Pro)**: a structured company profile (country, region, entity type, size, age, stage, NACE sectors, instruments, keywords) is matched against every current call with fixed rules. Each verdict lists the rule it relies on. Readiness gaps and negative memos per call. No model in the request path.
+- **Screening (Pro)**: a structured profile of a company, an organisation or an individual (country, region, entity type, size, age, stage, NACE sectors, instruments, keywords) is matched against every current call with fixed rules. Each verdict lists the rule it relies on. Readiness gaps and negative memos per call. No model in the request path.
 - **AI prefill (Pro)**: a website, PDF or paragraph is read by Gemini through Cloudflare AI Gateway to prefill the profile form. The user confirms every field before screening.
-- **Radar (Pro)**: saved company profiles are screened again every Monday; an email lists the calls that appeared since the last one and pass the rules.
+- **Radar (Pro)**: saved profiles are screened again every Monday; an email lists the calls that appeared since the last one and pass the rules.
 - **Assistants (Pro)**: an MCP server at `/mcp` (streamable HTTP) with `search_grants`, `get_grant` and `get_fit`, plus ChatGPT's `search` and `fetch`. Sign-in is OAuth 2.1 served by the site itself (`src/lib/oauth.ts`: RFC 8414 metadata, dynamic client registration, PKCE, refresh rotation, stateless signed tokens, single use through `oauth_uses`): the assistant opens `/oauth/authorize`, the user signs in with the magic link or pays for Pro and lands back, clicks Allow. A personal key (`/mcp/<key>`, bearer on the JSON API) covers tools without OAuth. A pasted `/fit/{id}` link lets the assistant reason over that screening. Sixty requests per minute per client. `plugins/grantledger` is the ChatGPT and Codex plugin package.
 - **Enrichment**: every current call gets an English summary, English search terms and structured eligibility fields extracted offline by the model, once per content version, so English keywords reach calls published in any language.
 
-Pro is one payment through Stripe: Solo (one company profile) or Team (three). Accounts sign in with a magic link; there is no password.
+Pro is one payment through Stripe: Solo (one profile) or Team (three). Accounts sign in with a magic link; there is no password.
 
 ## Layout
 
@@ -118,7 +118,7 @@ Services behind the site:
 - `/find`, `/fit/{id}`: screening form and private result page (link only, not indexed).
 - `/api/health` (JSON), `/api/match`, `/api/prefill`, `/api/rescreen`, `/api/profile`, `/api/login`, `/api/logout`, `/api/pro`, `/api/stripe-webhook`, `/api/radar-send`, `/api/enrich` (admin), `/sitemap.xml`.
 
-The matcher lives in `apps/web/src/lib/match.ts`: an SQL candidate pool (current calls, the company's country or EU-wide, FTS bonus on keywords), then fixed rules per record (country, region, beneficiary, sector, instrument, size, age, consortium, deadline, relevance). Each rule yields match, mismatch or unknown with a sentence. Fit means no mismatch and no unknown eligibility rule.
+The matcher lives in `apps/web/src/lib/match.ts`: an SQL candidate pool (current calls, the profile's country or EU-wide, FTS bonus on keywords), then fixed rules per record (country, region, beneficiary, sector, instrument, size, age, consortium, deadline, relevance). Each rule yields match, mismatch or unknown with a sentence. Fit means no mismatch and no unknown eligibility rule.
 
 ## Stack
 

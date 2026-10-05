@@ -6,7 +6,7 @@ committed) and is entered in the portal's Review details by hand.
 
 ## State on 2026-09-30
 
-Portal entry: https://platform.openai.com/plugins/manage/plugin_asdk_app_6abc57115d6481919dcc860514c33734
+Portal entry: platform.openai.com/plugins, GrantLedger.
 Done: package uploaded (metadata checks pass, category Finance), domain verified, MCP connected and scanned
 ("No issues found", after adding destructiveHint and idempotentHint to every tool), review information saved
 (countries, reviewer login URL and username, sign-in steps, 5 positive and 3 negative test cases, release notes).
@@ -28,11 +28,11 @@ accept the attestations.
 
 - Login: when ChatGPT opens the GrantLedger sign-in page, open "Have an access code?", paste the access code,
   click "Use access code", then "Allow". No email, no MFA, no magic link.
-- The account is `reviewer@grantledger.eu`, plan Team, with one saved sample company (Replio, a Lithuanian
+- The reviewer account (its address is saved in the portal's Review details) has plan Team, with one saved sample company (Replio, a Lithuanian
   micro startup) and its finished screening. The screening link is `https://grantledger.eu/fit/<REVIEW_FIT>`
   with the id from `apps/web/.env.review`. Sample data, not a customer's account.
 - To revoke after review: `UPDATE accounts SET paid_at = NULL, api_key = NULL, mcp_revoked_at = <now> WHERE
-  email = 'reviewer@grantledger.eu'` (every door checks paid status, so the session cookie, the personal key and
+  email = '<reviewer address>'` (every door checks paid status, so the session cookie, the personal key and
   the OAuth tokens all stop), then rotate `REVIEW_TOKEN` with `wrangler secret put REVIEW_TOKEN`.
 
 ## Positive test cases
@@ -66,6 +66,14 @@ accept the attestations.
 
 First release: five read-only tools over the open ledger of public funding (21 countries plus EU-wide, refreshed
 nightly), OAuth sign-in with a GrantLedger Pro account, screening results readable from their link.
+
+## Release notes (1.0.1)
+
+Wording only: the listing and the skill now address artists, researchers, non-profits and individuals as well as
+companies. Same five read-only tools, same sign-in, same tool descriptions as scanned for 1.0.0. Built on
+2026-10-05, not uploaded: on that day 1.0.0 was in review and the portal disables "Upload new version" until the
+review ends or is cancelled. Do not change the MCP tool descriptions or the server instructions while a review
+is open.
 
 ## Demo video
 
