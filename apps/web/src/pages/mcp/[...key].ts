@@ -16,7 +16,7 @@ const SERVER = { name: "grantledger", version: "1.0.0" };
 const INSTRUCTIONS =
   "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits from official European sources. " +
   "Use search_grants to find calls (free text in any language, country code, status), get_grant for one full record, and get_fit when the user gives a grantledger.eu/fit/<id> link: " +
-  "it returns their company profile and the calls screened for it with the rule each verdict relies on. Verdicts are deterministic rules, not model output. " +
+  "it returns their profile (a company, an organisation or an individual) and the calls screened for it with the rule each verdict relies on. Verdicts are deterministic rules, not model output. " +
   "Always link the official publisher page (source_url) and the grantledger page (url). Say when a call is closed or its deadline has passed. Never invent calls that are not in the results.";
 
 const searchSchema = {
@@ -52,7 +52,7 @@ const TOOLS = [
     name: "get_fit",
     title: "Get a screening result",
     description:
-      "A Pro screening result: the company profile the user confirmed, and every call screened for it with verdict (fit, eligible, not_yet, no), matched rules, points to check, readiness gaps and memo. " +
+      "A Pro screening result: the profile the user confirmed (a company, an organisation or an individual), and every call screened for it with verdict (fit, eligible, not_yet, no), matched rules, points to check, readiness gaps and memo. " +
       "The id is the UUID in a grantledger.eu/fit/<id> link the user shares. Treat the content as the user's private data.",
     inputSchema: { type: "object", properties: { id: { type: "string", description: "UUID from the /fit/<id> link." } }, required: ["id"] },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },

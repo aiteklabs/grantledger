@@ -81,7 +81,7 @@ export interface Content {
 const en: Content = {
   title: "Screening result",
   try_again: "Try again",
-  your_company: "Your company",
+  your_company: "Your profile",
   lead: "{screened} current calls screened for {scope}: {fits} eligible and relevant to your keywords or sector, {eligible} eligible but off-topic, {not_yet} to verify, {no} filtered out. Showing the top {shown}.",
   scope_eu: "EU-wide programmes plus keyword hits across Europe",
   scope_country: "{country} and EU-wide",
@@ -155,7 +155,7 @@ const en: Content = {
 const fr: Content = {
   title: "Résultat du criblage",
   try_again: "Réessayer",
-  your_company: "Votre entreprise",
+  your_company: "Votre profil",
   lead: "{screened} appels en cours criblés pour {scope} : {fits} éligibles et pertinents pour vos mots-clés ou votre secteur, {eligible} éligibles mais hors sujet, {not_yet} à vérifier, {no} écartés. Affichage des {shown} meilleurs.",
   scope_eu: "les programmes européens plus les correspondances de mots-clés dans toute l'Europe",
   scope_country: "{country} et les programmes européens",
@@ -229,7 +229,7 @@ const fr: Content = {
 const de: Content = {
   title: "Screening-Ergebnis",
   try_again: "Erneut versuchen",
-  your_company: "Ihr Unternehmen",
+  your_company: "Ihr Profil",
   lead: "{screened} aktuelle Ausschreibungen geprüft für {scope}: {fits} förderfähig und passend zu Ihren Stichwörtern oder Ihrer Branche, {eligible} förderfähig, aber themenfremd, {not_yet} zu prüfen, {no} ausgeschlossen. Angezeigt werden die besten {shown}.",
   scope_eu: "EU-weite Programme plus Stichworttreffer in ganz Europa",
   scope_country: "{country} und EU-weite Programme",
@@ -303,7 +303,7 @@ const de: Content = {
 const es: Content = {
   title: "Resultado del cribado",
   try_again: "Volver a intentarlo",
-  your_company: "Su empresa",
+  your_company: "Su perfil",
   lead: "{screened} convocatorias vigentes cribadas para {scope}: {fits} elegibles y relevantes para sus palabras clave o su sector, {eligible} elegibles pero fuera de tema, {not_yet} por verificar, {no} descartadas. Se muestran las {shown} mejores.",
   scope_eu: "los programas europeos más las coincidencias de palabras clave en toda Europa",
   scope_country: "{country} y los programas europeos",
@@ -377,7 +377,7 @@ const es: Content = {
 const it: Content = {
   title: "Risultato dello screening",
   try_again: "Riprova",
-  your_company: "La sua azienda",
+  your_company: "Il suo profilo",
   lead: "{screened} bandi attuali esaminati per {scope}: {fits} ammissibili e pertinenti alle sue parole chiave o al suo settore, {eligible} ammissibili ma fuori tema, {not_yet} da verificare, {no} esclusi. Vengono mostrati i primi {shown}.",
   scope_eu: "i programmi europei più le corrispondenze di parole chiave in tutta Europa",
   scope_country: "{country} e i programmi europei",
@@ -451,7 +451,7 @@ const it: Content = {
 const pt: Content = {
   title: "Resultado da triagem",
   try_again: "Tentar novamente",
-  your_company: "A sua empresa",
+  your_company: "O seu perfil",
   lead: "{screened} candidaturas atuais triadas para {scope}: {fits} elegíveis e relevantes para as suas palavras-chave ou o seu setor, {eligible} elegíveis mas fora do tema, {not_yet} a verificar, {no} excluídas. Mostram-se as {shown} melhores.",
   scope_eu: "os programas europeus mais as correspondências de palavras-chave em toda a Europa",
   scope_country: "{country} e os programas europeus",
@@ -525,7 +525,7 @@ const pt: Content = {
 const nl: Content = {
   title: "Screeningresultaat",
   try_again: "Opnieuw proberen",
-  your_company: "Uw bedrijf",
+  your_company: "Uw profiel",
   lead: "{screened} actuele oproepen gescreend voor {scope}: {fits} in aanmerking komend en relevant voor uw trefwoorden of sector, {eligible} in aanmerking komend maar buiten het onderwerp, {not_yet} te controleren, {no} uitgefilterd. De beste {shown} worden getoond.",
   scope_eu: "EU-brede programma's plus trefwoordtreffers in heel Europa",
   scope_country: "{country} en EU-brede programma's",
@@ -599,7 +599,7 @@ const nl: Content = {
 const pl: Content = {
   title: "Wynik selekcji",
   try_again: "Spróbuj ponownie",
-  your_company: "Państwa firma",
+  your_company: "Państwa profil",
   lead: "{screened} aktualnych naborów sprawdzonych dla {scope}: {fits} kwalifikujących się i pasujących do Państwa słów kluczowych lub branży, {eligible} kwalifikujących się, ale nie na temat, {not_yet} do weryfikacji, {no} odrzuconych. Wyświetlane są najlepsze {shown}.",
   scope_eu: "programów ogólnounijnych oraz trafień słów kluczowych w całej Europie",
   scope_country: "{country} i programów ogólnounijnych",

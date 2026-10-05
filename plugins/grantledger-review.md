@@ -67,6 +67,12 @@ accept the attestations.
 First release: five read-only tools over the open ledger of public funding (21 countries plus EU-wide, refreshed
 nightly), OAuth sign-in with a GrantLedger Pro account, screening results readable from their link.
 
+## Release notes (1.0.1)
+
+Wording only: the listing, the skill and the tool descriptions now address artists, researchers, non-profits and
+individuals as well as companies. Same five read-only tools, same sign-in. Built on 2026-10-05; upload the new
+ZIP in the portal and run the MCP scan again, since the `get_fit` description changed.
+
 ## Demo video
 
 Record two to three minutes in ChatGPT with the plugin connected: test cases 1, 3 and 4. Host the file at
