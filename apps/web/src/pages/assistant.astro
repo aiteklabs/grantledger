@@ -16,11 +16,14 @@ const mcpUrl = `${site}/mcp`;
 const keyUrl = key ? `${site}/mcp/${key}` : `${site}/mcp/<your-key>`;
 const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.url.searchParams.get("disconnected") === "1" ? "disconnected" : "";
 ---
-<Base title="GrantLedger in ChatGPT and Claude" description="Search the open ledger of public funding and reason over your screening result from ChatGPT, Claude or any MCP client. One address, sign in with your Pro account." noindex={!!account}>
+<Base title="GrantLedger in ChatGPT and Claude" description="Find grants and get past the jargon with ChatGPT, Claude or any MCP client: search the open ledger of public funding and reason over your screening. For companies, artists, researchers and non-profits." noindex={!!account}>
   <div class="wrap" style="padding-top:3rem;max-width:820px">
     <span class="kicker">Assistants · Pro</span>
     <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">GrantLedger in ChatGPT and Claude</h1>
-    <p class="lead">Ask an assistant which calls fit a startup in Portugal, what a loan guarantee in Germany requires, or what to apply to first from your own screening. It reads the same ledger as this site and links every answer to the official publisher page.</p>
+    <p class="lead">Ask an assistant which calls fit a startup in Portugal, a musician in the UK or a research lab in Austria, what a loan guarantee in Germany requires, or what to apply to first from your own screening. It reads the same ledger as this site and links every answer to the official publisher page.</p>
+
+    <h2>Past the jargon, without an intermediary</h2>
+    <p>Finding a call is half of the work; reading it is the other half. Once the ledger is connected, the assistant explains in plain words what a call requires, which document proves each condition and what a term such as "de minimis" or "consortium" means for you. You stay in charge: you apply yourself, with the funder, and nobody takes a share of the funding.</p>
 
     <h2>One address, then sign in</h2>
     <p>GrantLedger is a Model Context Protocol (MCP) server. Add this address as a connector; the assistant opens a GrantLedger page where you sign in with your Pro email (a link by email, no password) and click Allow. No key to copy.</p>
@@ -85,6 +88,8 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <ul>
       <li>"Which open calls in Spain fund industrial SMEs buying machines? Link the official pages."</li>
       <li>"EU-wide programmes for a deep-tech startup under three years old, deadline after next month."</li>
+      <li>"Open calls for an independent musician in the UK. Which ones accept an individual?"</li>
+      <li>"Research funding in Austria for a postdoc in life sciences. Explain the eligibility rules in plain words."</li>
       <li>"Which three calls should I apply to first and why? My screening: {site}/fit/&lt;id&gt;"</li>
       <li>"For the second call, what does 'to check' mean and what document proves it?"</li>
     </ul>
