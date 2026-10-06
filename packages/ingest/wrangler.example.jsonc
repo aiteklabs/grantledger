@@ -1,0 +1,15 @@
+// Copy to wrangler.jsonc and fill in your own ids, domains and links. wrangler.jsonc itself is not committed.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "freegrant-ingest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+  "triggers": { "crons": ["0 3 * * *", "0 5 * * *", "0 6 * * 1"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "freegrant", "database_id": "<d1-database-id>", "migrations_dir": "migrations" }
+  ],
+  "r2_buckets": [{ "binding": "RAW", "bucket_name": "freegrant-raw" }],
+  "workflows": [{ "name": "freegrant-ingest", "binding": "INGEST", "class_name": "IngestWorkflow" }],
+  "vars": { "PAGES_PER_INSTANCE": "50", "WEB_URL": "https://<your-domain>" }
+}

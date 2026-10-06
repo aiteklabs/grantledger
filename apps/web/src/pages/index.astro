@@ -1,0 +1,118 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import GrantRow from "~/components/GrantRow.astro";
+import { getStats, searchGrants } from "~/lib/db";
+import { fmtInt, countryName } from "~/lib/format";
+import { localePath, t } from "~/i18n";
+import { home } from "~/i18n/pages/home";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const L = (path: string) => localePath(Astro.locals.locale, path);
+const [stats, closing] = await Promise.all([getStats(env.DB), searchGrants(env.DB, { status: "open", pageSize: 8 })]);
+const h = home[Astro.locals.locale] ?? home.en!;
+const withSources = (text: string) => text.replace("{sources}", String(stats.sources.length));
+// Each audience opens the ledger already filtered for it.
+const audiences = [
+  ["business", "/grants?status=open&beneficiary=sme"],
+  ["artists", "/grants?status=open&q=artist"],
+  ["research", "/grants?status=open&beneficiary=research_org"],
+  ["nonprofit", "/grants?status=open&beneficiary=ngo"],
+  ["individuals", "/grants?status=open&beneficiary=individual"],
+  ["public", "/grants?status=open&beneficiary=public_body"],
+] as const;
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: d.site_name,
+      url: env.SITE_URL,
+      description: h.meta_description,
+      inLanguage: Astro.locals.locale,
+      potentialAction: { "@type": "SearchAction", target: `${env.SITE_URL}/grants?q={search_term_string}`, "query-input": "required name=search_term_string" },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: h.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: withSources(f.a) } })),
+    },
+  ],
+};
+---
+<Base title={h.meta_title} description={h.meta_description} jsonLd={jsonLd}>
+  <section class="hero wrap">
+    <span class="kicker reveal">{d.hero_kicker}</span>
+    <h1 class="reveal">{d.hero_title}</h1>
+    <p class="lead reveal">{d.hero_lead}</p>
+    <form class="search reveal" action={L("/grants")} method="get" role="search">
+      <input type="search" name="q" placeholder={d.search_placeholder} aria-label={d.search_placeholder} />
+      <button type="submit">{d.search_button}</button>
+    </form>
+    <div class="stats">
+      <div class="stat live"><a href={L("/grants?status=open")}><div class="n">{fmtInt(stats.open)}</div><div class="l">{d.stat_open}</div></a></div>
+      <div class="stat soon"><a href={L("/grants?status=forthcoming")}><div class="n">{fmtInt(stats.forthcoming)}</div><div class="l">{d.stat_forthcoming}</div></a></div>
+      <div class="stat"><div class="n">{stats.sources.length}</div><div class="l">{d.stat_sources}</div></div>
+      <div class="stat"><a href={L("/countries")}><div class="n">{stats.countries.filter((c) => c.country !== "EU").length}<span style="font-size:0.5em"> + EU</span></div><div class="l">{d.nav_countries}</div></a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">{h.who_kicker}</span>
+      <h2>{h.who_title}</h2>
+      <p class="lead">{withSources(h.who_lead)}</p>
+      <div class="audience">
+        {audiences.map(([key, href]) => <a href={L(href)}><h3>{h.who[key].title}</h3><p>{h.who[key].text}</p></a>)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>{d.how_title}</h2>
+      <div class="steps">
+        <div class="step"><h3>{d.how_1_title}</h3><p>{d.how_1_text}</p><a href={L("/grants")}>Browse the ledger</a></div>
+        <div class="step"><h3>{d.how_2_title}</h3><p>{d.how_2_text}</p><a href={L("/find")}>Run a fit check</a></div>
+        <div class="step"><h3>{d.how_3_title}</h3><p>{d.how_3_text}</p><a href={L("/grants?status=open")}>Open calls</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">{h.ai_kicker}</span>
+      <h2>{h.ai_title}</h2>
+      <p class="lead">{h.ai_text}</p>
+      <p style="margin-top:1.5rem"><a class="btn ghost" href="/assistant">{h.ai_cta}</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Closing soon</span>
+      <h2>Open calls with the nearest deadlines</h2>
+      <ul class="ledger">{closing.items.map((g) => <GrantRow grant={g} locale={Astro.locals.locale} />)}</ul>
+      <p style="margin-top:1.5rem"><a class="btn ghost" href={L("/grants?status=open")}>All open calls</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Coverage</span>
+      <h2>By country</h2>
+      <p class="muted" style="max-width:62ch">National sources for 21 countries plus EU-wide programmes. Every European country can be screened against EU calls today; national coverage grows one adapter at a time. <a href="/methodology">Sources and licenses</a>.</p>
+      <table>
+        <thead><tr><th>Country</th><th>Current calls</th></tr></thead>
+        <tbody>{stats.countries.map((c) => <tr><td><a href={L(`/countries/${c.country.toLowerCase()}`)}>{countryName(c.country, Astro.locals.locale)}</a></td><td>{fmtInt(c.open)}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap faq">
+      <h2>{h.faq_title}</h2>
+      {h.faq.map((f) => <><h3>{f.q}</h3><p>{withSources(f.a)}</p></>)}
+    </div>
+  </section>
+</Base>

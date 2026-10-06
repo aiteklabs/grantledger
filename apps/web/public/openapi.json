@@ -1,0 +1,495 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GrantLedger API",
+    "version": "1.0.0",
+    "description": "The open ledger of public funding: grants, loans, guarantees and tax credits from official European sources, plus Pro screening results by their private link. Every call needs the personal key of a GrantLedger Pro account (bearer token or ?key=), shown on https://grantledger.eu/assistant. Limit: 60 requests per minute per client.",
+    "license": {
+      "name": "CC0-1.0 (data), MIT (code)",
+      "url": "https://github.com/aiteklabs/grantledger"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://grantledger.eu"
+    }
+  ],
+  "paths": {
+    "/api/grants.json": {
+      "get": {
+        "operationId": "searchGrants",
+        "summary": "Search public funding calls",
+        "description": "Same filters as the website. Free text works in any language: every record carries an English summary and English search terms. Default view is current calls (open now or opening soon).",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free text, any language."
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ISO 3166-1 alpha-2 code (FR, DE, ES...), EU for EU-wide programmes, EUROPE for every European country plus EU-wide."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "current",
+                "open",
+                "forthcoming",
+                "closed"
+              ]
+            },
+            "description": "current (default): open now or opening soon. closed: the archive."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "grant",
+                "loan",
+                "guarantee",
+                "tax_credit",
+                "voucher",
+                "equity",
+                "prize",
+                "procurement",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "beneficiary",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "company",
+                "sme",
+                "startup",
+                "individual",
+                "research_org",
+                "public_body",
+                "ngo",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Source feed id, as listed on /coverage."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "deadline",
+                "recent"
+              ]
+            },
+            "description": "Default: relevance when q is given, deadline otherwise."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "per",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "per": {
+                      "type": "integer"
+                    },
+                    "pages": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Grant"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 60 requests per minute per client."
+          },
+          "401": {
+            "description": "Missing or unknown key."
+          }
+        }
+      }
+    },
+    "/api/grant.json": {
+      "get": {
+        "operationId": "getGrant",
+        "summary": "One funding call by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The id returned by searchGrants."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Grant"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No grant with this id."
+          },
+          "401": {
+            "description": "Missing or unknown key."
+          }
+        }
+      }
+    },
+    "/fit/{id}.json": {
+      "get": {
+        "operationId": "getScreening",
+        "summary": "A Pro screening result by its private link id",
+        "description": "The confirmed profile (a company, an organisation or an individual) and every call screened for it: verdict (fit, eligible, not_yet, no), rules matched, points to check, readiness gaps, memo. The id is the UUID of the grantledger.eu/fit/<id> link the user shares. Private data of that user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The screening result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "form": {
+                      "type": "object",
+                      "description": "The confirmed profile: a company, an organisation or an individual."
+                    },
+                    "summary": {
+                      "type": "object",
+                      "description": "Counts per verdict."
+                    },
+                    "matches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "grant_id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "source_url": {
+                            "type": "string"
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "fit",
+                              "eligible",
+                              "not_yet",
+                              "no"
+                            ]
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "matched": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Rules that passed."
+                          },
+                          "to_check": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Conditions the ledger cannot verify."
+                          },
+                          "gaps": {
+                            "type": "array",
+                            "description": "Readiness gaps before applying."
+                          },
+                          "memo": {
+                            "description": "Why this call is not a fit, when it is not."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No finished screening with this id."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Grant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "title_lang": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The publisher's text, in its language."
+          },
+          "summary_en": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Two English sentences extracted offline from the official text."
+          },
+          "funder_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "funder_level": {
+            "type": "string",
+            "enum": [
+              "supranational",
+              "national",
+              "regional",
+              "local",
+              "unknown"
+            ]
+          },
+          "country": {
+            "type": "string"
+          },
+          "country_name": {
+            "type": "string"
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "funding_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "funding_type_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "beneficiary_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "consortium": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "required",
+              "single",
+              null
+            ]
+          },
+          "sectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "NACE divisions."
+          },
+          "amount_min": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "amount_max": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "budget_total": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "forthcoming",
+              "closed",
+              "unknown"
+            ]
+          },
+          "opens_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closes_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_name": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "description": "The official publisher page. Always cite it."
+          },
+          "source_license": {
+            "type": "string"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "url": {
+            "type": "string",
+            "description": "The grantledger page for this record."
+          },
+          "first_seen_at": {
+            "type": "string"
+          },
+          "last_seen_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "proKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Personal key of a GrantLedger Pro account, from https://grantledger.eu/assistant"
+      }
+    }
+  },
+  "security": [
+    {
+      "proKey": []
+    }
+  ]
+}

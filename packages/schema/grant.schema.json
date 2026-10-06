@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "eu_ft",
+        "es_bdns",
+        "fr_aides_entreprises",
+        "us_grants_gov",
+        "nl_rvo",
+        "lt_esinvesticijos",
+        "uk_find_a_grant",
+        "it_incentivi",
+        "se_vinnova",
+        "fi_eura",
+        "no_forskningsradet",
+        "dk_tilskudspuljer",
+        "at_ffg",
+        "pt_portugal2030",
+        "de_foerderinfo",
+        "cz_dotaceeu",
+        "gr_espa",
+        "ie_enterprise_ireland",
+        "ro_mfe",
+        "pl_harmonogram",
+        "be_1890",
+        "be_innoviris",
+        "be_vlaio"
+      ]
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_license": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title_lang": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 8
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "funder_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "funder_level": {
+      "type": "string",
+      "enum": [
+        "supranational",
+        "national",
+        "regional",
+        "local",
+        "unknown"
+      ]
+    },
+    "country": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "funding_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "grant",
+          "loan",
+          "guarantee",
+          "tax_credit",
+          "voucher",
+          "equity",
+          "prize",
+          "procurement",
+          "other"
+        ]
+      }
+    },
+    "beneficiary_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "company",
+          "sme",
+          "startup",
+          "individual",
+          "research_org",
+          "public_body",
+          "ngo",
+          "other"
+        ]
+      }
+    },
+    "consortium": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "required",
+            "single"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sectors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "amount_min": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "amount_max": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "budget_total": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "currency": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "forthcoming",
+        "open",
+        "closed",
+        "unknown"
+      ]
+    },
+    "opens_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "closes_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "source_updated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "source_id",
+    "source_url",
+    "source_license",
+    "title",
+    "title_lang",
+    "summary",
+    "funder_name",
+    "funder_level",
+    "country",
+    "regions",
+    "funding_types",
+    "beneficiary_types",
+    "sectors",
+    "amount_min",
+    "amount_max",
+    "budget_total",
+    "currency",
+    "status",
+    "opens_at",
+    "closes_at",
+    "documents",
+    "source_updated_at"
+  ],
+  "additionalProperties": false
+}

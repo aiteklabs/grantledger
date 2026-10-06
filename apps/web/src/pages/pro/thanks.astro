@@ -1,0 +1,29 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { t } from "~/i18n";
+export const prerender = false;
+
+// Stripe sends the buyer here after payment. The webhook usually lands first; when it has not yet, say so.
+const d = t(Astro.locals.locale);
+const sessionId = Astro.url.searchParams.get("session_id") ?? "";
+const account = /^cs_[A-Za-z0-9_]+$/.test(sessionId) ? await env.DB.prepare("SELECT email FROM accounts WHERE stripe_session_id = ?").bind(sessionId).first<{ email: string }>() : null;
+const profiles = account ? ((await env.DB.prepare("SELECT COUNT(*) AS n FROM radars WHERE email = ? AND active = 1").bind(account.email).first<{ n: number }>())?.n ?? 0) : 0;
+---
+<Base title="Pro" noindex={true}>
+  <div class="wrap" style="padding-top:3rem;max-width:720px">
+    <span class="kicker">Pro</span>
+    {account ? (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_ready_title}</h1>
+        <p class="lead">{d.thanks_ready_text.replace("{email}", account.email)}{profiles > 0 && ` ${d.thanks_saved}`} {d.thanks_receipt}</p>
+      </>
+    ) : (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_wait_title}</h1>
+        <p class="lead">{d.thanks_wait_text}</p>
+        <p><a class="btn ghost" href="">{d.thanks_refresh}</a></p>
+      </>
+    )}
+  </div>
+</Base>

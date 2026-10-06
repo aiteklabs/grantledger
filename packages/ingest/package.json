@@ -1,0 +1,25 @@
+{
+  "name": "@grantledger/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "sample": "bun scripts/sample.ts",
+    "dev": "wrangler dev",
+    "release": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply freegrant --local",
+    "migrate:remote": "wrangler d1 migrations apply freegrant --remote"
+  },
+  "dependencies": {
+    "@grantledger/schema": "workspace:*",
+    "entities": "^6.0.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260926.1",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.85.0"
+  }
+}

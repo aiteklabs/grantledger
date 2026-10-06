@@ -1,0 +1,54 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { localePath } from "~/i18n";
+import { status } from "~/i18n/pages/status";
+import { getSiteFacts, getSourceRegister, getStats } from "~/lib/db";
+import { geminiConfigured } from "~/lib/gemini";
+import { SOURCE_NAMES, fmtDate, fmtInt } from "~/lib/format";
+export const prerender = false;
+
+// The human view of /api/health: same numbers, same freshness, readable.
+const locale = Astro.locals.locale;
+const c = status[locale] ?? status.en!;
+const L = (href: string) => localePath(locale, href);
+const [stats, facts, register] = await Promise.all([getStats(env.DB), getSiteFacts(env.DB), getSourceRegister(env.DB)]);
+const model = geminiConfigured(env);
+const staleBefore = new Date(Date.now() - 2 * 86_400_000).toISOString();
+const failing = register.filter((r) => r.error).length;
+const stale = stats.sources.filter((s) => !s.last_seen || s.last_seen < staleBefore).length;
+const headline = failing + stale === 0 ? [c.headline_all, c.headline_ok, "var(--moss)"] : [c.headline_some.replace("{n}", String(failing + stale)).replace("{total}", String(stats.sources.length)), failing ? c.headline_attention : c.headline_late, "var(--amber)"];
+---
+<Base title={c.meta_title} description={c.meta_description}>
+  <div class="wrap" style="padding-top:3rem;max-width:1000px">
+    <span class="kicker">{c.kicker}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{headline[0]} <span style={`color:${headline[2]}`}>{headline[1]}</span>.</h1>
+    <p class="lead">{c.lead.replace("{date}", facts.refreshed ? fmtDate(facts.refreshed, locale) : c.never)}<a href="/api/health" class="mono">/api/health</a>{c.lead_after}</p>
+
+    <div class="stats">
+      <div class="stat live"><a href={L("/grants?status=open")}><div class="n">{fmtInt(stats.open)}</div><div class="l">{c.tile_open}</div></a></div>
+      <div class="stat soon"><a href={L("/grants?status=forthcoming")}><div class="n">{fmtInt(stats.forthcoming)}</div><div class="l">{c.tile_soon}</div></a></div>
+      <div class="stat"><div class="n">{facts.countries}<span style="font-size:0.5em"> + EU</span></div><div class="l">{c.tile_countries}</div></div>
+      <div class="stat"><div class="n">{stats.sources.length}</div><div class="l">{c.tile_sources}</div></div>
+      <div class="stat"><div class="n">{fmtInt(stats.versions)}</div><div class="l">{c.tile_versions}</div></div>
+      <div class="stat"><div class="n" style={model ? "color:var(--moss)" : "color:var(--signal)"}>{model ? c.model_ready : c.model_off}</div><div class="l">{c.tile_model.replace("{model}", env.GEMINI_MODEL)}</div></div>
+    </div>
+
+    <h2>{c.sources_title}</h2>
+    <p class="muted small">{c.sources_note}</p>
+    <table>
+      <thead><tr><th>{c.th_feed}</th><th>{c.th_current}</th><th>{c.th_records}</th><th>{c.th_checked}</th></tr></thead>
+      <tbody>
+        {stats.sources.map((s) => (
+          <tr>
+            <td><a href={L(`/grants?source=${s.source}`)}>{SOURCE_NAMES[s.source] ?? s.source}</a></td>
+            <td class="mono">{fmtInt(s.open)}</td>
+            <td class="mono muted">{fmtInt(s.n)}</td>
+            <td class="mono small">{s.last_seen ? fmtDate(s.last_seen, locale) : c.never}{s.last_seen && s.last_seen < staleBefore && <span class="tag not_yet" style="margin-left:0.5rem">{c.tag_stale}</span>}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:1.5rem">{c.footer_before}<a href={L("/coverage")}>{c.footer_coverage}</a>{c.footer_mid}<a href="/api/health" class="mono">/api/health</a>{c.footer_after}</p>
+  </div>
+</Base>

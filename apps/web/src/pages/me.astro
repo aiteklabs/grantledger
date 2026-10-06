@@ -1,0 +1,53 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { PLANS, currentAccount, profileLimit } from "~/lib/account";
+import { listProfiles } from "~/lib/radar";
+import { fmtDate } from "~/lib/format";
+import { t } from "~/i18n";
+export const prerender = false;
+
+const d = t(Astro.locals.locale);
+const account = await currentAccount(Astro.request, env);
+if (!account) return Astro.redirect("/login?next=/me", 303);
+const profiles = await listProfiles(env.DB, account.email);
+const limit = profileLimit(account);
+const error = Astro.url.searchParams.get("error") ?? "";
+const saved = Astro.url.searchParams.get("saved") === "1";
+---
+<Base title={d.me_title} noindex={true}>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">{PLANS[account.plan].name} · {account.email}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.me_title}</h1>
+    <p class="lead">{limit === 1 ? d.me_lead_one : d.me_lead_n.replace("{n}", String(limit))} {d.me_lead_tail}</p>
+    {saved && <p class="callout" style="border-left-color:var(--moss)">{d.me_saved}</p>}
+    {error === "full" && <p class="callout">{d.me_full.replace("{n}", String(limit))}{account.plan === "solo" && <> <a href="/pro">{d.me_move_team}</a></>}</p>}
+
+    {profiles.length === 0 && <p class="callout">{d.me_none}</p>}
+    {profiles.length > 0 && (
+      <table>
+        <thead><tr><th>{d.me_company}</th><th>{d.me_col_saved}</th><th>{d.me_col_radar}</th><th></th></tr></thead>
+        <tbody>
+          {profiles.map((p) => (
+            <tr>
+              <td><a href={`/fit/${p.fit_check_id}`}>{p.company_name || "?"}</a></td>
+              <td class="mono small">{fmtDate(p.created_at)}</td>
+              <td class="mono small">{p.last_sent_at && p.last_sent_at !== p.created_at ? fmtDate(p.last_sent_at) : d.me_not_yet}</td>
+              <td style="white-space:nowrap">
+                <form method="post" action="/api/rescreen" style="display:inline"><input type="hidden" name="id" value={p.fit_check_id} /><button class="btn ghost" type="submit" style="padding:0.3rem 0.7rem;font-size:0.85rem">{d.me_rerun}</button></form>
+                <form method="post" action="/api/profile" style="display:inline;margin-left:0.4rem"><input type="hidden" name="action" value="remove" /><input type="hidden" name="id" value={p.id} /><button class="btn ghost" type="submit" style="padding:0.3rem 0.7rem;font-size:0.85rem">{d.me_remove}</button></form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
+    {profiles.length > 0 && <p class="small muted">{d.me_assistant} <a href="/assistant">{d.me_assistant_link}</a></p>}
+    {profiles.length < limit && <p style="margin-top:1.5rem"><a class="btn" href="/find">{d.me_add}</a><span class="muted small" style="margin-left:0.8rem">{d.me_add_note}</span></p>}
+
+    <h2 style="margin-top:2.5rem">{d.me_account}</h2>
+    <p class="small">{d.me_paid.replace("{plan}", PLANS[account.plan].name).replace("{date}", fmtDate(account.paid_at))}{account.business_name ? ` · ${account.business_name}` : ""}{account.tax_id ? ` · VAT ${account.tax_id}` : ""}. {d.me_receipts}{account.plan === "solo" && <> <a href="/pro">{d.me_move_team}</a></>} {d.me_change}</p>
+    <form method="post" action="/api/logout"><button class="btn ghost" type="submit">{d.me_signout}</button></form>
+  </div>
+</Base>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /fit/
+Sitemap: https://grantledger.eu/sitemap.xml

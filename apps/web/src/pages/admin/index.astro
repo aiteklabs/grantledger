@@ -1,0 +1,114 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { isAdmin, unauthorized } from "~/lib/auth";
+import { getProStats, getStats, listFitChecks, listIngestRuns } from "~/lib/db";
+import { NACE_BY_CODE } from "~/lib/nace";
+import type { CompanyProfile } from "~/lib/fit";
+import type { ProfileForm } from "~/lib/profile-form";
+import { geminiConfigured } from "~/lib/gemini";
+import { monthSpend } from "~/lib/spend";
+import { SOURCE_NAMES, fmtDate, fmtInt, parseJson } from "~/lib/format";
+
+export const prerender = false;
+if (!(await isAdmin(Astro.request, env))) return unauthorized(env);
+const [checks, runs, stats, enrichedRow] = await Promise.all([listFitChecks(env.DB, 200), listIngestRuns(env.DB, 30), getStats(env.DB), env.DB.prepare("SELECT COUNT(*) AS n FROM grant_enrichments").first<{ n: number }>()]);
+const enriched = enrichedRow?.n ?? 0;
+const spend = await monthSpend(env.DB);
+const pro = await getProStats(env.DB);
+---
+<Base title="Admin" noindex>
+  <div class="wrap" style="padding-top:2.5rem">
+    <span class="kicker">Private</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,3rem)">Admin</h1>
+    <p class="muted small mono">Model: {env.GEMINI_MODEL} via AI Gateway "{env.AI_GATEWAY_ID}" (Workers AI binding, BYOK) · {geminiConfigured(env) ? "ready" : "AI binding missing"} · admin auth: {env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD ? "Cloudflare Access" : "basic auth (set ACCESS_TEAM_DOMAIN and ACCESS_AUD to switch)"}</p>
+
+    <h2>Model spend, {spend.month}</h2>
+    <div class="stats" style="margin:1rem 0">
+      <div class="stat"><div class="n" style={spend.blocked ? "color:var(--signal)" : ""}>${spend.usd.toFixed(2)}</div><div class="l">spent this month</div></div>
+      <div class="stat"><div class="n">${spend.limit_usd}</div><div class="l">hard limit</div></div>
+      <div class="stat"><div class="n">{spend.enrichments}</div><div class="l">enrichments</div></div>
+      <div class="stat"><div class="n">{spend.prefills}</div><div class="l">prefills</div></div>
+    </div>
+    <p class="small muted">{spend.input_tokens.toLocaleString("en-GB")} tokens in, {spend.output_tokens.toLocaleString("en-GB")} out, priced at ${'{'}0.75{'}'} and ${'{'}3.75{'}'} per million. {spend.blocked ? "Budget reached: prefill and enrichment are refused until next month or a higher limit." : "Prefill and enrichment stop by themselves when the limit is reached."}</p>
+    <form method="post" action="/api/admin/settings" class="filters" style="margin:0 0 2rem">
+      <label class="small">Monthly limit (USD) <input type="text" name="model_monthly_limit_usd" value={spend.limit_usd} inputmode="decimal" style="width:6rem;margin-left:0.4rem" /></label>
+      <button class="btn ghost" type="submit" style="padding:0.4rem 0.8rem">Save limit</button>
+    </form>
+
+    <h2>Pro</h2>
+    <div class="stats" style="margin:1rem 0">
+      <div class="stat live"><div class="n">{pro.revenue_eur} EUR</div><div class="l">revenue, list price</div></div>
+      <div class="stat"><div class="n">{pro.accounts.length}</div><div class="l">accounts · {pro.solo} solo, {pro.team} team</div></div>
+      <div class="stat"><div class="n">{pro.profiles}</div><div class="l">saved profiles</div></div>
+      <div class="stat"><div class="n">{pro.emails_sent}</div><div class="l">profiles that got a Radar</div></div>
+    </div>
+    <p class="small muted">Revenue is plan count times list price, VAT included; refunds and Stripe fees are in the Stripe dashboard. Accounts without a Stripe session were created by hand. As admin you screen and prefill without limit from <a href="/find">Find my grant</a>; to save profiles, sign in with your own Pro account.</p>
+    <table>
+      <thead><tr><th>Email</th><th>Plan</th><th>Paid</th><th>Business / VAT</th><th>Profiles</th><th>Last sign-in</th></tr></thead>
+      <tbody>{pro.accounts.map((a) => <tr><td class="mono small">{a.email}</td><td>{a.plan}</td><td class="mono small">{fmtDate(a.paid_at)}</td><td class="small">{[a.business_name, a.tax_id].filter(Boolean).join(" · ")}</td><td class="small">{a.profiles}{a.companies && <>: {a.companies.split(";").map((c, i) => { const [name, fit] = c.split("|"); return <>{i > 0 && ", "}<a href={`/admin/fit/${fit}`}>{name}</a></>; })}</>}</td><td class="mono small">{a.last_login_at ? fmtDate(a.last_login_at) : "never"}</td></tr>)}</tbody>
+    </table>
+    <h3 style="margin-top:1.5rem">What they look for</h3>
+    <p class="small muted">Saved profiles plus every screening of the last 90 days: where to add sources, which sectors need better enrichment, which keywords the matcher must understand.</p>
+    <div class="filters" style="align-items:flex-start;gap:2rem">
+      <div><b class="small">Countries</b><ul class="small mono" style="margin:0.3rem 0 0;padding-left:1rem">{pro.countries.map(([k, n]) => <li>{k} · {n}</li>)}</ul></div>
+      <div><b class="small">Entity types</b><ul class="small mono" style="margin:0.3rem 0 0;padding-left:1rem">{pro.entity_types.map(([k, n]) => <li>{k} · {n}</li>)}</ul></div>
+      <div><b class="small">Sectors</b><ul class="small" style="margin:0.3rem 0 0;padding-left:1rem">{pro.sectors.map(([k, n]) => <li><span class="mono">{k}</span> {NACE_BY_CODE.get(k)?.name ?? ""} · {n}</li>)}</ul></div>
+      <div><b class="small">Keywords</b><ul class="small" style="margin:0.3rem 0 0;padding-left:1rem;columns:2">{pro.keywords.map(([k, n]) => <li>{k} · {n}</li>)}</ul></div>
+    </div>
+
+    <h2 style="margin-top:3rem">Fit checks ({checks.length})</h2>
+    <form method="post" action="/api/admin/delete-fit" onsubmit="return confirm('Delete every fit check and uploaded file? This cannot be undone.')" style="margin:0 0 0.8rem">
+      <input type="hidden" name="all" value="1" />
+      <button class="btn ghost" type="submit" style="padding:0.4rem 0.8rem;font-size:0.85rem">Delete all fit checks</button>
+    </form>
+    <table>
+      <thead><tr><th>When</th><th>Input</th><th>Company</th><th>Country</th><th>Status</th><th>Tokens</th><th>Time</th><th>Email</th><th></th></tr></thead>
+      <tbody>
+        {checks.map((c) => {
+          const ai = parseJson<CompanyProfile | null>(c.profile, null);
+          const f = parseJson<ProfileForm | null>(c.form, null);
+          const p = f ? { company_name: f.company_name || ai?.company_name, country: f.country } : ai;
+          return (
+            <tr>
+              <td class="mono small"><a href={`/admin/fit/${c.id}`}>{fmtDate(c.created_at)} {c.created_at.slice(11, 16)}</a></td>
+              <td class="small">{c.input_type}: {(c.input_name ?? c.input_ref ?? (c.input_text ?? "").slice(0, 60)) || "—"}</td>
+              <td>{p?.company_name ?? "—"}</td>
+              <td>{p?.country ?? "—"}</td>
+              <td><span class={`tag ${c.status === "done" ? "fit" : c.status === "error" ? "no" : "not_yet"}`}>{c.status}</span> <span class="muted small">{c.input_type === "form" ? "form" : "ai prefill"}</span></td>
+              <td class="mono small">{(c.input_tokens ?? 0) + (c.output_tokens ?? 0) || "—"}</td>
+              <td class="mono small">{c.duration_ms ? `${Math.round(c.duration_ms / 1000)}s` : "—"}</td>
+              <td class="small">{c.contact_email ?? "—"}</td>
+              <td>
+                <form method="post" action="/api/admin/delete-fit" onsubmit="return confirm('Delete this fit check?')" style="margin:0">
+                  <input type="hidden" name="id" value={c.id} />
+                  <button type="submit" class="tag no" style="cursor:pointer;border:0;font:inherit;font-size:0.7rem">delete</button>
+                </form>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:3rem">Enrichment</h2>
+    <p class="small">{fmtInt(enriched)} records enriched offline. Run a batch (uses the model, about $0.003 per record):</p>
+    <form method="post" action="/api/enrich" class="filters" style="margin:0.5rem 0 0">
+      <select name="source"><option value="">any source</option>{Object.entries(SOURCE_NAMES).map(([k, v]) => <option value={k}>{v}</option>)}</select>
+      <select name="limit"><option>10</option><option>20</option><option>50</option></select>
+      <button class="btn ghost" type="submit" style="padding:0.45rem 0.9rem">Enrich batch</button>
+    </form>
+
+    <h2 style="margin-top:3rem">Sources</h2>
+    <table>
+      <thead><tr><th>Source</th><th>Records</th><th>Open</th><th>Last seen</th></tr></thead>
+      <tbody>{stats.sources.map((s) => <tr><td>{SOURCE_NAMES[s.source] ?? s.source}</td><td>{fmtInt(s.n)}</td><td>{fmtInt(s.open)}</td><td class="mono small">{s.last_seen}</td></tr>)}</tbody>
+    </table>
+
+    <h2 style="margin-top:3rem">Ingest runs</h2>
+    <table>
+      <thead><tr><th>Started</th><th>Source</th><th>Pages</th><th>Upserted</th><th>Changed</th><th>Finished</th><th>Cursor / error</th></tr></thead>
+      <tbody>{runs.map((r) => <tr><td class="mono small">{r.started_at.slice(0, 16)}</td><td>{r.source}</td><td>{r.pages}</td><td>{fmtInt(r.upserted)}</td><td>{fmtInt(r.changed)}</td><td class="mono small">{r.finished_at?.slice(0, 16) ?? "running"}</td><td class="mono small">{r.error ?? (r.cursor ?? "").slice(0, 60)}</td></tr>)}</tbody>
+    </table>
+  </div>
+</Base>
