@@ -212,8 +212,27 @@ export async function getStats(db: D1Database): Promise<Stats> {
 }
 
 // Four numbers shown in the footer of every page, from the same tables as everything else.
+// Cached at the edge for an hour: the three counts walk the whole grants table (70k rows read
+// per call), the footer is on every page, and crawlers open 30k pages a day. The numbers only
+// move when the nightly ingest runs.
 export interface SiteFacts { active: number; countries: number; sources: number; refreshed: string | null }
+const SITE_FACTS_CACHE_KEY = "https://grantledger.cache/site-facts";
+const SITE_FACTS_TTL_S = 3600;
 export async function getSiteFacts(db: D1Database): Promise<SiteFacts> {
+  // Astro's DOM lib shadows the Workers CacheStorage type, which is the one with `default`.
+  const cache = (caches as CacheStorage & { default: Cache }).default;
+  const cached = await cache.match(SITE_FACTS_CACHE_KEY);
+  if (cached) return (await cached.json()) as SiteFacts;
+  const facts = await querySiteFacts(db);
+  await cache.put(
+    SITE_FACTS_CACHE_KEY,
+    new Response(JSON.stringify(facts), {
+      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${SITE_FACTS_TTL_S}` },
+    }),
+  );
+  return facts;
+}
+async function querySiteFacts(db: D1Database): Promise<SiteFacts> {
   const now = new Date().toISOString();
   const row = await db
     .prepare(
