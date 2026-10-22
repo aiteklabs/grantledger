@@ -1,0 +1,11 @@
+---
+// Ledger mark: a page with ruled lines, one line lit. Inline so it inherits the text colour and needs no request.
+interface Props { size?: number }
+const { size = 22 } = Astro.props;
+---
+<svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" class="logo-mark">
+  <rect x="3.5" y="2.5" width="17" height="19" rx="2.5" stroke="currentColor" stroke-width="1.6" />
+  <path d="M7.5 8h9M7.5 16h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.55" />
+  <path d="M7.5 12h9" stroke="var(--signal)" stroke-width="2.4" stroke-linecap="round" />
+  <circle cx="18.2" cy="12" r="1.6" fill="var(--signal)" />
+</svg>

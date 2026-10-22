@@ -1,0 +1,63 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getGrant, getVersions } from "~/lib/db";
+import { COUNTRY_NAMES, FUNDING_TYPE_LABELS, SOURCE_NAMES, fmtDate, fmtMoney } from "~/lib/format";
+import { t } from "~/i18n";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const id = decodeURI(Astro.params.id ?? "");
+const g = await getGrant(env.DB, id);
+if (!g) return new Response("Not found", { status: 404 });
+const versions = await getVersions(env.DB, id);
+// A call past its deadline reads as closed even before the nightly crawl marks it.
+const status = g.closes_at && g.closes_at < new Date().toISOString() && g.status !== "closed" ? "closed" : g.status;
+const statusLabel = { open: d.status_open, forthcoming: d.status_forthcoming, closed: d.status_closed, unknown: d.status_unknown }[status] ?? status;
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "MonetaryGrant",
+  name: g.title,
+  description: (g.summary ?? "").slice(0, 500),
+  url: `${env.SITE_URL}/grants/${encodeURI(g.id)}`,
+  funder: g.funder_name ? { "@type": "Organization", name: g.funder_name } : undefined,
+  amount: g.budget_total ? { "@type": "MonetaryAmount", value: g.budget_total, currency: g.currency ?? "EUR" } : undefined,
+  sameAs: g.source_url,
+};
+---
+<Base title={g.title} description={(g.summary ?? g.title).replace(/\s+/g, " ").slice(0, 160)} jsonLd={jsonLd} contentLang={g.title_lang}>
+  <div class="wrap detail">
+    <article>
+      <span class="kicker">{SOURCE_NAMES[g.source] ?? g.source} · <span class={`tag ${status}`}>{statusLabel}</span>{g.consortium && <> · <span class={`tag ${g.consortium === "single" ? "fit" : "not_yet"}`}>{g.consortium === "single" ? d.consortium_single : d.consortium_required}</span></>}</span>
+      <h1 style="font-size:clamp(1.7rem,3.6vw,2.8rem)">{g.title}</h1>
+      <p><a class="btn signal" href={g.source_url} rel="noopener" target="_blank">{d.grant_official} ↗</a></p>
+      {g.summary ? <div class="summary" lang={g.title_lang}>{g.summary}</div> : <p class="muted">No summary published by the source. Read the official page.</p>}
+      {g.documents.length > 0 && (
+        <>
+          <h3 style="margin-top:2rem">{d.grant_documents}</h3>
+          <ul>{g.documents.map((doc) => <li><a href={doc.url} rel="noopener" target="_blank">{doc.title}</a></li>)}</ul>
+        </>
+      )}
+      <h3 style="margin-top:2rem">{d.grant_history}</h3>
+      <p class="muted small">First seen {fmtDate(g.first_seen_at)}, last checked {fmtDate(g.last_seen_at)}. {versions.length} recorded version{versions.length === 1 ? "" : "s"}.</p>
+      <ul class="small mono">{versions.map((v) => <li>{fmtDate(v.seen_at)} · {v.content_hash.slice(0, 12)}</li>)}</ul>
+      <p class="small muted"><a href={`https://github.com/aiteklabs/grantledger/issues/new?title=${encodeURIComponent(`Record correction: ${g.id}`)}`} rel="noopener">Report a problem with this record</a> · <a href="/ai-notice">How data is produced</a></p>
+    </article>
+    <aside class="facts">
+      <dl>
+        <dt>{d.grant_funder}</dt><dd>{g.funder_name ?? "—"} <span class="muted small">({g.funder_level})</span></dd>
+        <dt>Country</dt><dd>{COUNTRY_NAMES[g.country] ?? g.country}{g.regions.length > 0 && <span class="muted small"> · {g.regions.slice(0, 6).join(", ")}</span>}</dd>
+        <dt>Type</dt><dd>{g.funding_types.map((f) => FUNDING_TYPE_LABELS[f] ?? f).join(", ") || "—"}</dd>
+        <dt>Beneficiaries</dt><dd>{g.beneficiary_types.map((b) => b.replace("_", " ")).join(", ") || "—"}</dd>
+        <dt>Consortium</dt><dd>{g.consortium === "required" ? d.consortium_required : g.consortium === "single" ? d.consortium_single : "—"}</dd>
+        <dt>Sectors</dt><dd>{g.sectors.slice(0, 8).join(", ") || "—"}</dd>
+        <dt>{d.grant_opens}</dt><dd>{fmtDate(g.opens_at) || "—"}</dd>
+        <dt>{d.grant_deadline}</dt><dd>{fmtDate(g.closes_at) || "—"}</dd>
+        <dt>{d.grant_budget}</dt><dd>{fmtMoney(g.budget_total, g.currency) || "—"}</dd>
+        {(g.amount_min || g.amount_max) ? <><dt>Per award</dt><dd>{fmtMoney(g.amount_min, g.currency)} – {fmtMoney(g.amount_max, g.currency)}</dd></> : null}
+        <dt>{d.grant_source}</dt><dd class="small">{SOURCE_NAMES[g.source]}<br /><span class="muted">{g.source_license}</span></dd>
+        <dt>ID</dt><dd class="mono small">{g.id}</dd>
+      </dl>
+    </aside>
+  </div>
+</Base>

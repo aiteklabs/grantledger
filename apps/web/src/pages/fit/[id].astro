@@ -1,0 +1,192 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getFitCheck, getFitMatches } from "~/lib/db";
+import { NATIONAL_COVERAGE, PLANNED_SOURCES, countryName, fmtDate, parseJson } from "~/lib/format";
+import { NACE_BY_CODE } from "~/lib/nace";
+import type { ProfileForm } from "~/lib/profile-form";
+import type { MatchSummary } from "~/lib/match";
+import type { Gap, Memo } from "~/lib/readiness";
+import { HOURLY_EUR, gapHours } from "~/lib/readiness";
+import { t } from "~/i18n";
+import { fitPage } from "~/i18n/pages/fit";
+import { currentAccount } from "~/lib/account";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const locale = Astro.locals.locale;
+const c = fitPage[locale] ?? fitPage.en;
+const country = (code: string) => countryName(code, locale);
+const id = Astro.params.id ?? "";
+if (!/^[0-9a-f-]{36}$/.test(id)) return new Response("Not found", { status: 404 });
+const check = await getFitCheck(env.DB, id);
+if (!check) return new Response("Not found", { status: 404 });
+if (check.status === "pending" || check.status === "draft") return Astro.redirect(`/find?draft=${id}`, 303);
+const matches = check.status === "done" ? await getFitMatches(env.DB, id) : [];
+const form = parseJson<ProfileForm | null>((check as { form?: string | null }).form ?? null, null);
+const verdictLabel = { fit: d.verdict_fit, eligible: d.verdict_eligible, not_yet: d.verdict_not_yet, no: d.verdict_no };
+const summary = parseJson<MatchSummary | null>(check.summary, null);
+const byVerdict = (v: string) => matches.filter((m) => m.verdict === v);
+const fits = summary?.fit ?? matches.filter((m) => m.verdict === "fit").length;
+const notYet = summary?.not_yet ?? matches.filter((m) => m.verdict === "not_yet").length;
+const screened = summary?.screened ?? matches.length;
+const account = await currentAccount(Astro.request, env);
+const savedProfile = account ? await env.DB.prepare("SELECT id FROM radars WHERE email = ? AND fit_check_id = ? AND active = 1").bind(account.email, id).first() : null;
+---
+<Base title={c.title} noindex>
+  <div class="wrap" style="padding-top:3rem;max-width:900px">
+    <span class="kicker">{d.nav_find}</span>
+    {check.status === "error" && (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,3rem)">{d.fit_error}</h1>
+        <p class="callout mono small">{check.error}</p>
+        <p><a class="btn ghost" href="/find">{c.try_again}</a></p>
+      </>
+    )}
+    {check.status === "done" && form && (
+      <>
+        <h1 style="font-size:clamp(1.8rem,4vw,3rem)">{form.company_name || c.your_company}</h1>
+        <p class="lead">{c.lead.replace("{screened}", String(screened)).replace("{scope}", form.country === "EU" ? c.scope_eu : c.scope_country.replace("{country}", country(form.country))).replace("{fits}", String(fits)).replace("{eligible}", String(summary?.eligible ?? 0)).replace("{not_yet}", String(notYet)).replace("{no}", String(summary?.no ?? 0)).replace("{shown}", String(matches.length))}</p>
+        <p class="muted small mono">{c.meta_rules} · {fmtDate(check.finished_at ?? check.created_at)} · {c.meta_private} · <button type="button" class="chip" id="copy-link">{d.fit_copy_link}</button></p>
+        <script is:inline define:vars={{ id, name: form.company_name || "", date: fmtDate(check.created_at), copied: c.copied }}>
+          // Remember this result in the browser so the /find page can list it again. Newest first, ten kept.
+          try {
+            const key = "grantledger.fits";
+            const items = JSON.parse(localStorage.getItem(key) || "[]").filter((it) => it.id !== id);
+            items.unshift({ id, name, date });
+            localStorage.setItem(key, JSON.stringify(items.slice(0, 10)));
+          } catch {}
+          document.getElementById("copy-link")?.addEventListener("click", async (e) => {
+            try {
+              await navigator.clipboard.writeText(location.href);
+              e.target.textContent = copied;
+            } catch {}
+          });
+        </script>
+        {form.country !== "EU" && !NATIONAL_COVERAGE[form.country] && (
+          <p class="callout">{c.national_notice.replace("{country}", country(form.country)).replace("{planned}", PLANNED_SOURCES[form.country] ? c.planned_source.replace("{source}", PLANNED_SOURCES[form.country]) : "")}</p>
+        )}
+
+        <section class="report" aria-label={c.report_aria}>
+          <div class="report-head"><span>{(form.company_name || c.your_company).toUpperCase()}</span><span>{fmtDate(check.created_at)} · {c.calls_screened.replace("{n}", String(screened))}</span></div>
+          <div class="report-cols">
+            <div class="report-col">
+              <div class="report-title fit">{d.verdict_fit} · {fits}</div>
+              {byVerdict("fit").slice(0, 4).map((m) => <div class="report-item"><a href={`/grants/${encodeURI(m.grant.id)}`}>{m.grant.title}</a><span class="muted small">{m.grant.closes_at ? c.deadline.replace("{date}", fmtDate(m.grant.closes_at)) : c.no_deadline}{m.grant.amount_max ? ` · ${c.up_to.replace("{amount}", `${Math.round(m.grant.amount_max).toLocaleString("en-GB")} ${m.grant.currency ?? ""}`)}` : m.grant.budget_total ? ` · ${c.budget.replace("{amount}", `${Math.round(m.grant.budget_total).toLocaleString("en-GB")} ${m.grant.currency ?? ""}`)}` : ""}</span></div>)}
+              {fits > 4 && <div class="muted small mono">{c.more_below.replace("{n}", String(fits - 4))}</div>}
+              {fits === 0 && <div class="muted small">{c.fit_none}</div>}
+            </div>
+            <div class="report-col">
+              <div class="report-title not_yet">{d.verdict_not_yet} · {notYet}</div>
+              {byVerdict("not_yet").slice(0, 4).map((m) => <div class="report-item"><a href={`/grants/${encodeURI(m.grant.id)}`}>{m.grant.title}</a><span class="muted small">{parseJson<string[]>(m.missing, [])[0]?.replace(/^(No|Check): /, "") ?? ""}</span></div>)}
+              {notYet > 4 && <div class="muted small mono">{c.more_below.replace("{n}", String(notYet - 4))}</div>}
+              {summary?.common_gap && <div class="muted small mono" style="margin-top:0.6rem">{c.common_gap}{summary.common_gap}</div>}
+            </div>
+            <div class="report-col">
+              <div class="report-title no">{d.verdict_no} · {summary?.no ?? 0}</div>
+              {Object.entries(summary?.filtered_by ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, n]) => <div class="report-item mono small"><span>{n}</span> <span class="muted">{c.rule[k] ?? k}</span></div>)}
+              {(summary?.eligible ?? 0) > 0 && <div class="report-item mono small"><span>{summary?.eligible}</span> <span class="muted">{c.eligible_off_topic}</span></div>}
+              <div class="muted small" style="margin-top:0.6rem">{c.filtered_note}</div>
+            </div>
+          </div>
+        </section>
+
+        <h2 style="margin-top:2.5rem">{d.fit_profile}</h2>
+        <div class="profile-grid">
+          <div><b>{c.label_country}</b>{country(form.country)}{form.region ? `, ${form.region}` : ""}</div>
+          <div><b>{c.label_entity}</b>{form.entity_type.replace("_", " ")} · {form.headcount === "unknown" ? form.size : c.staff.replace("{n}", form.headcount.replace("to", " to ").replace("plus", "+"))}{form.founded_year ? ` · ${c.founded.replace("{year}", String(form.founded_year))}` : ""}</div>
+          <div><b>{c.label_revenue_stage}</b>{form.revenue.replace("lt", c.under).replace("gt", c.over).replace("to", " to ").replace("k", "k").replace("m", "M")} · {form.stage.replace("_", " ")}</div>
+          <div><b>{c.label_trl_ip}</b>{form.trl ?? c.na} · {form.ip_status}</div>
+          <div><b>{c.label_prior_partners}</b>{form.prior_funding} · {form.partners}</div>
+          <div><b>{c.label_sectors}</b>{form.sectors.map((s) => `${s} ${NACE_BY_CODE.get(s)?.name ?? ""}`).join("; ") || c.any}</div>
+          <div><b>{c.label_instruments}</b>{form.funding_types.join(", ").replace(/_/g, " ") || c.any}</div>
+          <div><b>{c.label_keywords}</b>{form.keywords.join(", ") || c.none}</div>
+          <div><b>{c.label_consortium}</b>{form.consortium_ok ? c.possible : c.no}</div>
+        </div>
+        <p class="small muted" style="margin-top:0.8rem"><a href={`/find?draft=${id}`}>{c.edit_rerun}</a> · <a href={`/fit/${id}.json`}>{c.export_json}</a></p>
+        <form method="post" action="/api/rescreen" style="margin-top:0.8rem">
+          <input type="hidden" name="id" value={id} />
+          <input type="hidden" name="locale" value={Astro.locals.locale} />
+          <button class="btn ghost" type="submit">{c.rerun_button}</button>
+          <span class="muted small" style="margin-left:0.6rem">{c.rerun_note}</span>
+        </form>
+        <div id="radar" class="callout" style="margin-top:1.2rem;border-left-color:var(--moss)">
+          {account && savedProfile ? (
+            <p style="margin:0"><b>{c.radar_on}</b> {c.radar_on_note.replace("{email}", account.email)} <a href="/me">{d.pro_your_profiles}</a>.</p>
+          ) : account ? (
+            <form method="post" action="/api/profile" style="margin:0;display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap">
+              <input type="hidden" name="action" value="save" /><input type="hidden" name="fit" value={id} />
+              <button class="btn" type="submit">{c.save_button}</button>
+              <span class="small">{c.save_note_before}<a href="/me">{c.save_note_link}</a>{c.save_note_after}</span>
+            </form>
+          ) : (
+            <p style="margin:0"><b>{c.anon_save_bold}</b>{c.anon_save_rest} <a href={`/login?next=/fit/${id}`}>{c.sign_in}</a> {c.or} <a href={`/pro?fit=${id}`}>{c.get_pro}</a>.</p>
+          )}
+        </div>
+
+        <h2 style="margin-top:2.5rem">{d.fit_matches}</h2>
+        {matches.length === 0 && <p class="callout">{c.no_matches}</p>}
+        {matches.length > 0 && (
+          <div class="chips" role="group" aria-label={c.show_aria}>
+            <button type="button" class="chip on" data-show="">{d.status_current}</button>
+            <button type="button" class="chip open" data-show="open">{d.status_open_now}</button>
+            <button type="button" class="chip soon" data-show="forthcoming">{d.status_opening_soon}</button>
+          </div>
+        )}
+        {matches.map((m) => (
+          <article class="match" data-status={m.grant.status}>
+            <header>
+              <div>
+                <span class={`tag ${m.verdict}`}>{verdictLabel[m.verdict]}</span>
+                <a href={`/grants/${encodeURI(m.grant.id)}`} style="font-family:var(--font-display);font-size:1.15rem;margin-left:0.5rem">{m.grant.title}</a>
+              </div>
+              <span class="score">{m.score}<span class="muted small">/100</span></span>
+            </header>
+            <p class="muted small" style="margin:0.3rem 0 0"><span class={`tag ${m.grant.status}`}>{m.grant.status === "forthcoming" ? d.status_opening_soon : m.grant.status === "open" ? d.status_open_now : m.grant.status}</span> {m.grant.funder_name} · {country(m.grant.country)}{m.grant.opens_at && m.grant.status === "forthcoming" ? ` · ${c.opens.replace("{date}", fmtDate(m.grant.opens_at))}` : ""}{m.grant.closes_at ? ` · ${c.deadline.replace("{date}", fmtDate(m.grant.closes_at))}` : ""}</p>
+            <ul>{parseJson<string[]>(m.reasons, []).map((r) => <li>{r}</li>)}</ul>
+            {parseJson<string[]>(m.missing, []).length > 0 && <ul class="missing">{parseJson<string[]>(m.missing, []).map((r) => <li>{r}</li>)}</ul>}
+            {(() => {
+              const gaps = parseJson<Gap[]>(m.gaps, []);
+              const memo = parseJson<Memo | null>(m.memo, null);
+              const open = gaps.filter((x) => x.state !== "ok");
+              return (
+                <>
+                  {gaps.length > 0 && (
+                    <details style="margin-top:0.7rem">
+                      <summary style="cursor:pointer;font-weight:600;font-size:0.95rem">{c.gaps_summary.replace("{items}", c.items(open.length)).replace("{hours}", String(gapHours(gaps)))}</summary>
+                      <table class="small" style="margin-top:0.5rem">
+                        <tbody>{gaps.map((x) => <tr><td style="white-space:nowrap"><span class={`tag ${x.state === "ok" ? "fit" : x.state === "missing" ? "no" : "not_yet"}`}>{c.state[x.state]}</span></td><td class="muted" style="white-space:nowrap">{c.bucket[x.bucket]}</td><td>{x.text}</td><td class="mono" style="white-space:nowrap">{x.hours}h</td></tr>)}</tbody>
+                      </table>
+                    </details>
+                  )}
+                  {memo && (
+                    <details style="margin-top:0.7rem">
+                      <summary style="cursor:pointer;font-weight:600;font-size:0.95rem">{c.memo_title}</summary>
+                      <div class="small" style="margin-top:0.5rem">
+                        {memo.looked_like_fit.length > 0 && <p><b>{c.memo_looked}</b> {memo.looked_like_fit.join("; ")}</p>}
+                        <p><b>{c.memo_blocker}</b> {memo.disqualifiers.join("; ") || c.memo_unverified}</p>
+                        <p><b>{c.memo_apply}</b> {c.memo_cost.replace("{hours}", String(memo.wasted_hours)).replace("{eur}", memo.wasted_eur.toLocaleString("en-GB")).replace("{rate}", String(HOURLY_EUR))}</p>
+                        {memo.alternatives.length > 0 && <ul>{memo.alternatives.map((a) => <li>{a.grant_id ? <a href={`/grants/${encodeURI(a.grant_id)}`}>{a.text}</a> : a.text}</li>)}</ul>}
+                      </div>
+                    </details>
+                  )}
+                </>
+              );
+            })()}
+            <p class="small" style="margin:0.6rem 0 0"><a href={m.grant.source_url} target="_blank" rel="noopener">{c.official}</a></p>
+          </article>
+        ))}
+        <p style="margin-top:2rem"><a class="btn ghost" href="/find">{c.screen_another}</a></p>
+      </>
+    )}
+  </div>
+<script is:inline>
+  document.querySelectorAll(".chips [data-show]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const want = b.dataset.show;
+      document.querySelectorAll(".chips [data-show]").forEach((x) => x.classList.toggle("on", x === b));
+      document.querySelectorAll("article.match").forEach((a) => { a.style.display = !want || a.dataset.status === want ? "" : "none"; });
+    });
+  });
+</script>
+</Base>

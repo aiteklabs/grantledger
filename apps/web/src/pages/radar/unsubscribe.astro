@@ -1,0 +1,17 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+export const prerender = false;
+
+// One click from the email footer. The id is a 36-hex random token only the emails carry.
+const id = Astro.url.searchParams.get("id") ?? "";
+const ok = /^[0-9a-f]{36}$/.test(id) ? (await env.DB.prepare("UPDATE radars SET active = 0 WHERE id = ?").bind(id).run()).meta.changes > 0 : false;
+---
+<Base title="Radar stopped" noindex={true}>
+  <div class="wrap" style="padding-top:3rem;max-width:720px">
+    <span class="kicker">Radar</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{ok ? "Radar stopped." : "Nothing to stop."}</h1>
+    <p class="lead">{ok ? "No more emails for this profile. Your screening page stays live, and you can write to contact@aiteklabs.com to switch Radar back on at no cost." : "This link does not match an active Radar. It may already be stopped."}</p>
+    <p><a class="btn ghost" href="/">Back to the ledger</a></p>
+  </div>
+</Base>

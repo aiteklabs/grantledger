@@ -1,0 +1,29 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { localePath } from "~/i18n";
+import { about } from "~/i18n/pages/about";
+import { getStats } from "~/lib/db";
+import { fmtInt } from "~/lib/format";
+export const prerender = false;
+const locale = Astro.locals.locale;
+const c = about[locale] ?? about.en!;
+const L = (href: string) => localePath(locale, href);
+const stats = await getStats(env.DB);
+---
+<Base title={c.meta_title} description={c.meta_description}>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">{c.kicker}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{c.title}</h1>
+    <p class="lead">{c.lead_before}<a href="https://aiteklabs.com" rel="noopener">{c.lead_studio}</a>{c.lead_after.replace("{sources}", String(stats.sources.length)).replace("{open}", fmtInt(stats.open))}</p>
+
+    <h2>{c.pro_title}</h2>
+    <p>{c.pro_text}</p>
+
+    <h2>{c.open_title}</h2>
+    <p>{c.open_before}<a href={L("/methodology")}>{c.open_methodology}</a>{c.open_mid}<a href={L("/coverage")}>{c.open_coverage}</a>{c.open_after}</p>
+
+    <h2>{c.contact_title}</h2>
+    <p>{c.contact_before}<a href="mailto:contact@aiteklabs.com">contact@aiteklabs.com</a>{c.contact_mid}<a href="https://github.com/aiteklabs/grantledger" rel="noopener">github.com/aiteklabs/grantledger</a>{c.contact_after}</p>
+  </div>
+</Base>

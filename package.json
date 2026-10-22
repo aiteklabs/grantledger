@@ -1,0 +1,20 @@
+{
+  "name": "grantledger",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "schema:json": "pnpm --filter @grantledger/schema build:json",
+    "sample": "pnpm --filter @grantledger/ingest sample",
+    "dev": "pnpm --filter @grantledger/ingest dev",
+    "deploy:ingest": "pnpm --filter @grantledger/ingest run release"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici@>=7.28.0 <7.29.1": "7.29.1"
+    }
+  }
+}

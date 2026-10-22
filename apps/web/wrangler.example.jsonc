@@ -1,0 +1,27 @@
+// Copy to wrangler.jsonc and fill in your own ids, domains and links. wrangler.jsonc itself is not committed.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "freegrant-web",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "routes": [{ "pattern": "<your-domain>", "custom_domain": true }],
+  "d1_databases": [{ "binding": "DB", "database_name": "freegrant", "database_id": "<d1-database-id>" }],
+  "r2_buckets": [{ "binding": "RAW", "bucket_name": "freegrant-raw" }],
+  "ai": { "binding": "AI" },
+  "send_email": [{ "name": "EMAIL" }],
+  "ratelimits": [{ "name": "API_RL", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }],
+  "vars": {
+    "AI_GATEWAY_ID": "<ai-gateway-id>",
+    "GEMINI_MODEL": "gemini-3.8-flash",
+    "SITE_URL": "https://<your-domain>",
+    "ACCESS_TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
+    "STRIPE_SOLO_LINK": "https://buy.stripe.com/<solo-link>",
+    "STRIPE_TEAM_LINK": "https://buy.stripe.com/<team-link>",
+    "MAIL_FROM": "hello@<your-domain>",
+    "REVIEW_EMAIL": "reviewer@<your-domain>",
+    "OPENAI_APPS_CHALLENGE": ""
+  }
+  // Secrets, set with `wrangler secret put`: ADMIN_TOKEN, ACCESS_AUD, TURNSTILE_SITE_KEY, TURNSTILE_SECRET, STRIPE_WEBHOOK_SECRET, REVIEW_TOKEN.
+}
