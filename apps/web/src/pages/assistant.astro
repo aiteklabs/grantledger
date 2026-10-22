@@ -1,7 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
-import { currentAccount, rotateApiKey } from "~/lib/account";
+import { CHATGPT_PLUGIN_URL, currentAccount, rotateApiKey } from "~/lib/account";
 import { listProfiles } from "~/lib/radar";
 export const prerender = false;
 
@@ -26,18 +26,20 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <p>Finding a call is half of the work; reading it is the other half. Once the ledger is connected, the assistant explains in plain words what a call requires, which document proves each condition and what a term such as "de minimis" or "consortium" means for you. You stay in charge: you apply yourself, with the funder, and nobody takes a share of the funding.</p>
 
     <h2>One address, then sign in</h2>
-    <p>GrantLedger is a Model Context Protocol (MCP) server. Add this address as a connector; the assistant opens a GrantLedger page where you sign in with your Pro email (a link by email, no password) and click Allow. No key to copy.</p>
+    <p>GrantLedger is a Model Context Protocol (MCP) server. Add this address as a connector; the assistant opens a GrantLedger page where you sign in with your Pro email (a code by email, no password) and click Allow. No key to copy.</p>
     <pre class="callout mono" style="margin:1rem 0"><code>{mcpUrl}</code></pre>
     {flag === "disconnected" && <p class="callout" style="border-left-color:var(--moss)">Every assistant is disconnected. Each one asks you to sign in again on its next use.</p>}
     {!account && <p><a class="btn" href="/pro">Get Pro</a> <span class="small muted" style="margin-left:0.8rem">One payment, no subscription. No account yet? The sign-in page offers Pro too, and brings you back once paid.</span></p>}
     <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT. Read only. Sixty requests per minute.</p>
 
-    <h3>ChatGPT</h3>
+    <h3 id="chatgpt">ChatGPT</h3>
+    <p><a class="btn" href={CHATGPT_PLUGIN_URL} target="_blank" rel="noopener">Open GrantLedger in ChatGPT</a></p>
     <ol>
-      <li>Settings, Security and login: turn on Developer mode.</li>
-      <li>Plugins, Add, Create MCP App. Name GrantLedger, paste the address, authentication: OAuth. ChatGPT sends you to the sign-in page, then lists GrantLedger among your plugins.</li>
+      <li>Connect the plugin. ChatGPT opens the GrantLedger sign-in page.</li>
+      <li>Type your Pro email, then the six-digit code we email you, and click Allow. No Pro account yet? The same page offers it and brings you back once paid.</li>
       <li>In a chat, enable GrantLedger and ask. Deep research also uses it through <span class="mono">search</span> and <span class="mono">fetch</span>.</li>
     </ol>
+    <p class="small muted">Workspace without the plugin directory: Settings, Security and login, turn on Developer mode, then Plugins, Add, Create MCP App with the address above and OAuth.</p>
     <h3>Claude</h3>
     <ol>
       <li>Settings, Connectors, Add custom connector. Name GrantLedger, paste the address, Connect, sign in.</li>

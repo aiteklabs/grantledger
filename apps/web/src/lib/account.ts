@@ -17,6 +17,9 @@ export interface Account {
   mcp_revoked_at: string | null;
 }
 
+// The GrantLedger plugin in ChatGPT's directory: connecting it runs the OAuth sign-in of /oauth/authorize.
+export const CHATGPT_PLUGIN_URL = "https://chatgpt.com/plugins/plugin_asdk_app_6abc57115d6481919dcc860514c33734";
+
 // Solo: one company profile. Team: three. Both lifetime.
 export const PLANS: Record<Plan, { profiles: number; eur: number; name: string }> = {
   solo: { profiles: 1, eur: 9, name: "Solo" },

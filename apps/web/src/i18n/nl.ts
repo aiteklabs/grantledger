@@ -145,5 +145,8 @@ export const nl: Dictionary = {
   me_signout: "Uitloggen",
   me_assistant: "Gebruik uw profielen in ChatGPT of Claude:",
   me_assistant_link: "zo werkt het",
+  me_gpt_title: "GrantLedger in ChatGPT",
+  me_gpt_text: "Open de plugin en koppel hem met dit e-mailadres. Vraag daarna in de chat naar subsidies.",
+  me_gpt_open: "Openen in ChatGPT",
   footer_text: "Gebouwd door Aitek Labs. Open source (MIT), open data (CC0). Elke fiche linkt naar zijn officiële uitgever.",
 };
