@@ -82,24 +82,31 @@ export const noForskningsradet: Source = {
   start() {
     return "0";
   },
-  async fetchPage(cursor): Promise<Page> {
-    const timeframe = Number(cursor);
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)" },
-      body: JSON.stringify({ timeframe, subjects: [], targetGroups: [], deadlineTypes: [], applicationTypes: [] }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for Forskningsrådet timeframe ${timeframe}`);
-    const data = (await res.json()) as Response;
+  // Both lists in one page, current first. The API reuses an id across them (63 is a 2026 call in the current list
+  // and a 2019 one in the completed list); read on two pages, the two calls overwrote each other on every crawl. A
+  // completed entry whose id the current list already has is dropped.
+  async fetchPage(): Promise<Page> {
     const grants: Grant[] = [];
     const raws: Page["raws"] = [];
-    for (const g of data.groups ?? []) {
-      const groupTitle = (g.title ?? "").replace(/\s*\(\d+ utlysninger?\)\s*$/, "");
-      for (const p of g.proposals ?? []) {
-        grants.push(normalize(p, groupTitle, timeframe));
-        raws.push({ source_id: p.id, payload: { group: groupTitle, proposal: p } });
+    const current = new Set<string>();
+    for (const timeframe of [0, 1]) {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)" },
+        body: JSON.stringify({ timeframe, subjects: [], targetGroups: [], deadlineTypes: [], applicationTypes: [] }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status} for Forskningsrådet timeframe ${timeframe}`);
+      const data = (await res.json()) as Response;
+      for (const g of data.groups ?? []) {
+        const groupTitle = (g.title ?? "").replace(/\s*\(\d+ utlysninger?\)\s*$/, "");
+        for (const p of g.proposals ?? []) {
+          if (timeframe === 0) current.add(p.id);
+          else if (current.has(p.id)) continue;
+          grants.push(normalize(p, groupTitle, timeframe));
+          raws.push({ source_id: p.id, payload: { group: groupTitle, proposal: p } });
+        }
       }
     }
-    return { grants, raws, next: timeframe === 0 ? "1" : null };
+    return { grants, raws, next: null };
   },
 };

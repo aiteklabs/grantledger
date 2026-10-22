@@ -57,7 +57,7 @@ function normalize(h: Hit, detail: Detail | null): Grant {
   }
   const instruments = ((syn.fundingInstruments as { description?: string }[] | undefined) ?? []).map((f) => (f.description ?? "").toLowerCase());
   const fundingTypes: Grant["funding_types"] = instruments.length
-    ? [...new Set(instruments.map((i): Grant["funding_types"][number] => (i.includes("grant") ? "grant" : i.includes("procurement") ? "procurement" : "other")))]
+    ? [...new Set(instruments.map((i): Grant["funding_types"][number] => (i.includes("grant") ? "grant" : i.includes("procurement") ? "procurement" : "other")))].sort()
     : ["grant"];
   const description = (syn.synopsisDesc ?? syn.forecastDesc ?? null) as string | null;
   return {
@@ -74,7 +74,9 @@ function normalize(h: Hit, detail: Detail | null): Grant {
     country: "US",
     regions: [],
     funding_types: fundingTypes,
-    beneficiary_types: [...beneficiaryTypes],
+    // Sorted: grants.gov lists applicant types in a different order from one request to the next, and an unsorted
+    // array made the record look changed on every crawl.
+    beneficiary_types: [...beneficiaryTypes].sort(),
     sectors: h.cfdaList ?? [],
     amount_min: num(syn.awardFloor),
     amount_max: num(syn.awardCeiling),

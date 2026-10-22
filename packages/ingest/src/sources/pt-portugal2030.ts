@@ -64,7 +64,9 @@ function normalize(a: Aviso, status: Grant["status"]): Grant {
     status: closes && closes < now ? "closed" : opens && opens > now ? "forthcoming" : status,
     opens_at: opens,
     closes_at: closes,
-    documents: (a.documentos ?? []).filter((d) => d.path).slice(0, 5).map((d) => ({ title: d.documentoDesignacao ?? "document", url: `https://portugal2030.pt/wp-json/avisos/download?container=${encodeURIComponent(d.container ?? "")}&path=${encodeURIComponent(d.path ?? "")}` })),
+    // Sorted before the first five are kept: the API lists the documents in a different order from one request to the
+    // next, so a different five made the call look changed on every crawl.
+    documents: (a.documentos ?? []).filter((d) => d.path).sort((x, y) => (x.documentoDesignacao ?? "").localeCompare(y.documentoDesignacao ?? "") || (x.path ?? "").localeCompare(y.path ?? "")).slice(0, 5).map((d) => ({ title: d.documentoDesignacao ?? "document", url: `https://portugal2030.pt/wp-json/avisos/download?container=${encodeURIComponent(d.container ?? "")}&path=${encodeURIComponent(d.path ?? "")}` })),
     source_updated_at: iso(a.aviso.dataUltimaAlteracao),
   };
 }

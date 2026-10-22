@@ -163,7 +163,9 @@ function normalize(item: SearchItem, detail: Awaited<ReturnType<typeof fetchSche
   const status: Grant["status"] = detail.completed ? "closed" : closes ? statusFromDates(null, closes) : rolling && !stale ? "open" : "unknown";
   // relevantApplicants is a fixed vocabulary (Ideelle og frivillige organisasjoner, Kommuner, Fylkeskommuner,
   // Kommunale foretak, Statsforvaltningen, Private foretak, Finansielle foretak, Personlig næringsdrivende).
-  const applicants = (v.relevantApplicants ?? []).map((a) => a.value ?? "").filter(Boolean);
+  // Sorted: the API returns the vocabulary in a different order from one request to the next, and the summary that
+  // lists it made every scheme look changed and enriched again on every crawl.
+  const applicants = (v.relevantApplicants ?? []).map((a) => a.value ?? "").filter(Boolean).sort((a, b) => a.localeCompare(b, "nb"));
   const who = applicants.join(" ").toLowerCase();
   const bens = new Set<Grant["beneficiary_types"][number]>(["ngo"]);
   if (/kommun|fylke|statsforvaltning/.test(who)) bens.add("public_body");
@@ -177,7 +179,7 @@ function normalize(item: SearchItem, detail: Awaited<ReturnType<typeof fetchSche
     (applicants.length || draftText(v.relevantApplicant)) && `Hvem kan søke: ${[applicants.join(", "), draftText(v.relevantApplicant)].filter(Boolean).join("\n")}`,
     v.requiresNonProfit ? "Krever registrering i Frivillighetsregisteret." : "",
     draftText(v.usableGrantArea) && `Hva kan det søkes om: ${draftText(v.usableGrantArea)}`,
-    (v.grantTypes ?? []).length ? `Tilskuddstype: ${(v.grantTypes ?? []).map((t) => t.value).filter(Boolean).join(", ")}` : "",
+    (v.grantTypes ?? []).length ? `Tilskuddstype: ${(v.grantTypes ?? []).map((t) => t.value ?? "").filter(Boolean).sort((a, b) => a.localeCompare(b, "nb")).join(", ")}` : "",
     rolling ? "Søknadsfrist: løpende" : deadlines.length ? `Søknadsfrist: ${deadlines.join(", ")}` : "",
     v.amountType === "AMOUNT" && v.amount ? `Beløp${v.year ? ` ${v.year}` : ""}: ${String(v.amount).replace(/\B(?=(\d{3})+$)/g, " ")} kroner` : "",
     administrator ? `Tilskuddsforvalter: ${administrator}` : "",

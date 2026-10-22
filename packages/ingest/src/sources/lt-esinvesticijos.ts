@@ -63,7 +63,9 @@ async function detail(slug: string) {
     region: regionText,
     form: field(text, "Finansavimo forma"),
     budget: field(text, "Kvietimo finansavimo suma"),
-    summary: body.replace(/\n{3,}/g, "\n\n").slice(0, 12000),
+    // The page counts down to the deadline ("Liko 40 d. 10 val.": 40 days 10 hours left). The line changed every day,
+    // so every open call looked changed and was enriched again on every crawl.
+    summary: body.replace(/^Liko(?: \d+ (?:d|val|min|sek)\.)+\n?/gm, "").replace(/\n{3,}/g, "\n\n").slice(0, 12000),
   };
 }
 

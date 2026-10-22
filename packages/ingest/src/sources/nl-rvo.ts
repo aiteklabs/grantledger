@@ -64,7 +64,10 @@ async function detail(url: string): Promise<{ status: Grant["status"]; text: str
   const start = full.search(/(Open voor aanvragen|Gesloten voor aanvragen|Binnenkort open|Tijdelijk gesloten)/i);
   const body = start >= 0 ? full.slice(start) : full;
   const end = body.search(/\n(In opdracht van|Hoort bij|We helpen u graag)/);
-  return { status, text: (end > 0 ? body.slice(0, end) : body).slice(0, 8000) };
+  // RVO re-checks its pages and prints the date ("De inhoud van deze pagina is gecontroleerd op 7 oktober 2026"): that
+  // line alone made a page look changed and enriched again.
+  const text = (end > 0 ? body.slice(0, end) : body).replace(/De inhoud van deze pagina is gecontroleerd op \d{1,2} \p{L}+ \d{4}\.?[ \t]*\n?/gu, "");
+  return { status, text: text.slice(0, 8000) };
 }
 
 function normalize(it: Item, d: { status: Grant["status"]; text: string }): Grant {
@@ -93,7 +96,9 @@ function normalize(it: Item, d: { status: Grant["status"]; text: string }): Gran
     opens_at: null,
     closes_at: null,
     documents: [],
-    source_updated_at: it.changed,
+    // `changed` moves with every re-check of the page, not only with an edit, so it is left out; a real edit changes
+    // the text and is caught anyway. The sitemap falls back to first_seen_at.
+    source_updated_at: null,
   };
 }
 

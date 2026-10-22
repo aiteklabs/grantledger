@@ -40,7 +40,11 @@ function normalize(it: Item): Grant {
   if (/unternehmen/.test(text)) bens.add("company");
   if (/hochschul|forschungseinrichtung|universit/.test(text)) bens.add("research_org");
   if (/kommun|länder|gemeinde/.test(text)) bens.add("public_body");
-  const idBase = (it.guid || it.link).replace(/^https?:\/\//, "").replace(/[^\w.-]+/g, "_").slice(0, 150);
+  // One announcement can open several lines under the same link ("Jüdische Gegenwartsforschung – Förderlinie A" and
+  // "– Förderlinie B", each with its own deadline). Without the line in the id they shared one record and overwrote
+  // each other on every crawl.
+  const line = (rawTitle ?? "").match(/\b(?:Förderlinie|Linie|Modul)\s+([A-Z0-9]{1,3})\s*$/i);
+  const idBase = (it.guid || it.link).replace(/^https?:\/\//, "").replace(/[^\w.-]+/g, "_").slice(0, 150) + (line ? `_line-${line[1]!.toLowerCase()}` : "");
   return {
     id: `de_foerderinfo:${idBase}`,
     source: "de_foerderinfo",

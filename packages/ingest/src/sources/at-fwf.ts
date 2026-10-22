@@ -22,7 +22,6 @@ interface SolrDoc {
   programStartTimestamp_intS?: number;
   programEndTimestamp_intS?: number;
   category?: string[];
-  indexed?: string;
 }
 
 interface SolrPage { documents: SolrDoc[]; currentPage: number; lastPage: number }
@@ -95,7 +94,9 @@ function normalize(d: SolrDoc, text: string): Grant {
     opens_at: opens,
     closes_at: closes,
     documents: [],
-    source_updated_at: d.indexed ?? null,
+    // Solr's `indexed` is when the search index last rebuilt the document (every night), not a publisher edit: as
+    // source_updated_at it made every programme look changed and enriched again on every crawl.
+    source_updated_at: null,
   };
 }
 
