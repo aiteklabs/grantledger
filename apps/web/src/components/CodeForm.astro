@@ -1,7 +1,7 @@
 ---
 import { t } from "~/i18n";
 
-// The six-digit code from the sign-in email, typed on the page that asked for it. /api/code reads the address from
+// The six-digit code from the sign-in email, typed on the page that asked for it. /api/code reads the challenge from
 // the gl_login cookie and comes back to this page with wrong=1 when the code does not match.
 interface Props {
   next?: string;

@@ -132,13 +132,15 @@ export async function recordPayment(db: D1Database, p: { email: string; plan: Pl
 
 // Emails a single-use sign-in link and a six-digit code for the same login row. Silent when no paid account exists, so
 // the form cannot be used to probe emails. The code is in the subject, so a phone notification is enough to read it.
-export async function sendMagicLink(env: Env, email: string, opts: { welcome?: boolean; next?: string } = {}): Promise<void> {
+// Returns the row's challenge (null without an account): the gl_login cookie of the browser that may type the code.
+export async function sendMagicLink(env: Env, email: string, opts: { welcome?: boolean; next?: string } = {}): Promise<string | null> {
   const account = await getAccount(env.DB, email);
-  if (!account?.paid_at) return;
+  if (!account?.paid_at) return null;
   const token = randomToken();
+  const challenge = randomToken();
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(6, "0");
   const now = Date.now();
-  await env.DB.prepare("INSERT INTO logins (token, email, code, created_at, expires_at) VALUES (?, ?, ?, ?, ?)").bind(token, account.email, code, new Date(now).toISOString(), new Date(now + LINK_MINUTES * 60_000).toISOString()).run();
+  await env.DB.prepare("INSERT INTO logins (token, email, code, challenge, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)").bind(token, account.email, code, challenge, new Date(now).toISOString(), new Date(now + LINK_MINUTES * 60_000).toISOString()).run();
   const link = `${env.SITE_URL}/auth?token=${token}${opts.next ? `&next=${encodeURIComponent(opts.next)}` : ""}`;
   const plan = PLANS[account.plan];
   const title = opts.welcome ? `Your grantledger ${plan.name} is ready` : "Sign in to grantledger";
@@ -153,18 +155,20 @@ export async function sendMagicLink(env: Env, email: string, opts: { welcome?: b
 <p style="margin:24px 0"><a href="${link}" style="display:inline-block;background:#171511;color:#f4efe6;padding:12px 20px;text-decoration:none;font-weight:600">Sign in</a></p>
 <p style="font-size:13px;color:#6b675f">If the button does not work, open this address: ${link}<br>If you did not ask for this, ignore this email.</p></div></body></html>`;
   await env.EMAIL.send({ to: account.email, from: { email: env.MAIL_FROM, name: "grantledger" }, subject: `${title} (code ${code})`, text, html });
+  return challenge;
 }
 
-// Exchanges the six-digit code of a sign-in email for the account. The code and the link share one login row, so
-// either spends both. Every guess first counts against every open code of the email, in the same batch, so even
-// parallel guesses get five tries in all; a new email starts a fresh count.
-export async function consumeLoginCode(db: D1Database, email: string, code: string): Promise<string | null> {
-  if (!email || !/^\d{6}$/.test(code)) return null;
+// Exchanges the six-digit code of a sign-in email for the account. The code is looked up by the challenge of the
+// browser that asked for it, never by address, so a stranger who knows an address cannot spend its owner's tries. The
+// code and the link share one login row, so either spends both. Every guess first counts against the row, in the same
+// batch, so even parallel guesses get five tries in all; a new email starts a fresh count.
+export async function consumeLoginCode(db: D1Database, challenge: string, code: string): Promise<string | null> {
+  if (!/^[0-9a-f]{48}$/.test(challenge) || !/^\d{6}$/.test(code)) return null;
   const now = new Date().toISOString();
-  const open = "email = ? AND used_at IS NULL AND expires_at > ?";
+  const open = "challenge = ? AND used_at IS NULL AND expires_at > ?";
   const [, spent] = await db.batch<{ email: string }>([
-    db.prepare(`UPDATE logins SET attempts = attempts + 1 WHERE ${open}`).bind(email, now),
-    db.prepare(`UPDATE logins SET used_at = ? WHERE ${open} AND code = ? AND attempts <= 5 RETURNING email`).bind(now, email, now, code),
+    db.prepare(`UPDATE logins SET attempts = attempts + 1 WHERE ${open}`).bind(challenge, now),
+    db.prepare(`UPDATE logins SET used_at = ? WHERE ${open} AND code = ? AND attempts <= 5 RETURNING email`).bind(now, challenge, now, code),
   ]);
   const row = spent?.results[0];
   if (!row) return null;

@@ -5,18 +5,20 @@ import CodeForm from "~/components/CodeForm.astro";
 import { t } from "~/i18n";
 export const prerender = false;
 
-// Stripe sends the buyer here after payment. The webhook usually lands first; when it has not yet, say so. Once the
-// account exists, the page asks for the code of the welcome email (the gl_login cookie tells /api/code the address).
+// Stripe sends the buyer here after payment. The webhook usually lands first; until it has saved the account and sent
+// the welcome email, say so. Then the page asks for the code of that email: the gl_login cookie gets the challenge of
+// the newest open sign-in row, and the Stripe session id in the address is what entitles this browser to it.
 const d = t(Astro.locals.locale);
 const sessionId = Astro.url.searchParams.get("session_id") ?? "";
 const account = /^cs_[A-Za-z0-9_]+$/.test(sessionId) ? await env.DB.prepare("SELECT email FROM accounts WHERE stripe_session_id = ?").bind(sessionId).first<{ email: string }>() : null;
 const profiles = account ? ((await env.DB.prepare("SELECT COUNT(*) AS n FROM radars WHERE email = ? AND active = 1").bind(account.email).first<{ n: number }>())?.n ?? 0) : 0;
-if (account) Astro.cookies.set("gl_login", account.email, { path: "/", maxAge: 1800, httpOnly: true, secure: true, sameSite: "lax" });
+const login = account ? await env.DB.prepare("SELECT challenge FROM logins WHERE email = ? AND challenge IS NOT NULL AND used_at IS NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1").bind(account.email, new Date().toISOString()).first<{ challenge: string }>() : null;
+if (login) Astro.cookies.set("gl_login", login.challenge, { path: "/", maxAge: 1800, httpOnly: true, secure: true, sameSite: "lax" });
 ---
 <Base title="Pro" noindex={true}>
   <div class="wrap" style="padding-top:3rem;max-width:720px">
     <span class="kicker">Pro</span>
-    {account ? (
+    {account && login ? (
       <>
         <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_ready_title}</h1>
         <p class="lead">{d.thanks_ready_text.replace("{email}", account.email)}{profiles > 0 && ` ${d.thanks_saved}`} {d.thanks_receipt}</p>
