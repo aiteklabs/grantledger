@@ -112,6 +112,7 @@ export const es: Dictionary = {
   auth_expired_title: "Este enlace ha caducado o ya se usó.",
   auth_expired_text: "Los enlaces funcionan una vez, durante 30 minutos. Pida uno nuevo.",
   auth_new: "Obtener un enlace nuevo",
+  auth_confirm: "Pulse el botón para terminar de iniciar sesión.",
   thanks_ready_title: "Gracias. Su enlace de acceso está en camino.",
   thanks_ready_text: "Lo enviamos a {email}. Ábralo para llegar a sus perfiles.",
   thanks_saved: "El análisis del que viene queda guardado como primer perfil.",

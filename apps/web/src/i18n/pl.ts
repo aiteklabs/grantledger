@@ -112,6 +112,7 @@ export const pl: Dictionary = {
   auth_expired_title: "Ten link wygasł lub został już użyty.",
   auth_expired_text: "Linki działają raz, przez 30 minut. Poproś o nowy.",
   auth_new: "Nowy link",
+  auth_confirm: "Kliknij przycisk, aby dokończyć logowanie.",
   thanks_ready_title: "Dziękujemy. Link logowania jest w drodze.",
   thanks_ready_text: "Wysłaliśmy go na {email}. Otwórz go, aby przejść do profili.",
   thanks_saved: "Sprawdzenie, z którego przychodzisz, zapisano jako pierwszy profil.",

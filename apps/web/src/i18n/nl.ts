@@ -112,6 +112,7 @@ export const nl: Dictionary = {
   auth_expired_title: "Deze link is verlopen of al gebruikt.",
   auth_expired_text: "Links werken één keer, 30 minuten lang. Vraag een nieuwe aan.",
   auth_new: "Nieuwe link aanvragen",
+  auth_confirm: "Klik op de knop om het inloggen af te ronden.",
   thanks_ready_title: "Bedankt. Uw inloglink is onderweg.",
   thanks_ready_text: "We stuurden hem naar {email}. Open hem om bij uw profielen te komen.",
   thanks_saved: "De toetsing waar u vandaan komt is opgeslagen als eerste profiel.",

@@ -112,6 +112,7 @@ export const de: Dictionary = {
   auth_expired_title: "Dieser Link ist abgelaufen oder wurde schon verwendet.",
   auth_expired_text: "Links gelten einmal, 30 Minuten lang. Fordern Sie einen neuen an.",
   auth_new: "Neuen Link anfordern",
+  auth_confirm: "Klicken Sie auf die Schaltfläche, um die Anmeldung abzuschließen.",
   thanks_ready_title: "Danke. Ihr Anmeldelink ist unterwegs.",
   thanks_ready_text: "Wir haben ihn an {email} gesendet. Öffnen Sie ihn, um zu Ihren Profilen zu gelangen.",
   thanks_saved: "Die Prüfung, von der Sie kommen, ist als erstes Profil gespeichert.",

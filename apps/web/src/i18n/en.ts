@@ -111,6 +111,7 @@ export const en = {
   auth_expired_title: "This link has expired or was already used.",
   auth_expired_text: "Links work once and for 30 minutes. Ask for a new one.",
   auth_new: "Get a new link",
+  auth_confirm: "Press the button to finish signing in.",
   thanks_ready_title: "Thank you. Your sign-in link is on its way.",
   thanks_ready_text: "We sent it to {email}. Open it to reach your profiles.",
   thanks_saved: "The screening you came from is saved as your first profile.",
