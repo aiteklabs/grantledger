@@ -72,13 +72,11 @@ const errors: Record<string, string> = { ...c.errors, budget: d.find_budget_clos
 const [prefilledBefore = "", prefilledAfter = ""] = profile
   ? c.prefilled.replace("{source}", draft?.input_name ?? draft?.input_ref ?? c.your_text).split("{confidence}")
   : [];
-const turnstile = env.TURNSTILE_SITE_KEY;
 const account = await currentAccount(Astro.request, env);
 if (!account && !(await isAdmin(Astro.request, env))) return Astro.redirect("/pro?from=find", 303);
 ---
 <Base title={d.find_title} description={d.find_lead} noindex={Boolean(draftId)}>
   {pending && !stuck && <script is:inline>setTimeout(() => location.reload(), 4000);</script>}
-  {turnstile && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
   <div class="wrap" style="padding-top:3rem;max-width:900px">
     <span class="kicker">{d.nav_find}</span>
     <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{d.find_title}</h1>
@@ -97,7 +95,6 @@ if (!account && !(await isAdmin(Astro.request, env))) return Astro.redirect("/pr
           <div class="field"><label for="url">{d.find_url_label}</label><input type="text" id="url" name="url" placeholder="https://yourcompany.com" inputmode="url" /></div>
           <div class="field"><label for="pdf">{d.find_pdf_label}</label><input type="file" id="pdf" name="pdf" accept="application/pdf,.pdf" /></div>
           <div class="field"><label for="text">{d.find_text_label}</label><textarea id="text" name="text" rows="3"></textarea></div>
-          {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
           <div><button class="btn ghost" type="submit" disabled={!ready}>{d.find_prefill_submit}</button>{!ready && <span class="muted small"> {c.not_configured}</span>}</div>
         </form>
       )}
@@ -213,7 +210,6 @@ if (!account && !(await isAdmin(Astro.request, env))) return Astro.redirect("/pr
       </div>
       <div class="field"><label for="keywords">{c.keywords}</label><input type="text" id="keywords" name="keywords" value={p.keywords} placeholder="artificial intelligence, digital skills, battery recycling" /><p class="muted small" style="margin:0.3rem 0 0">{c.keywords_note}</p></div>
       <div class="field"><label for="email">{d.find_email_label}</label><input type="email" id="email" name="email" /></div>
-      {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
       <div>
         <button class="btn signal" type="submit">{d.find_submit}</button>
         <p class="muted small" style="margin-top:0.8rem">{d.find_privacy}</p>

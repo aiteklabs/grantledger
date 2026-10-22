@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { hashIp, isAdmin } from "~/lib/auth";
 import { currentAccount } from "~/lib/account";
-import { verifyTurnstile } from "~/lib/turnstile";
 import { geminiConfigured } from "~/lib/gemini";
 import { runPrefill } from "~/lib/run-prefill";
 import { monthSpend } from "~/lib/spend";
@@ -18,7 +17,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   // Refused before anything is read or stored: the month's model budget is a hard limit.
   if ((await monthSpend(env.DB)).blocked) return redirect("/find?error=budget", 303);
   const form = await request.formData();
-  if (!(await verifyTurnstile(env, form, request.headers.get("cf-connecting-ip")))) return redirect("/find?error=captcha", 303);
   const url = String(form.get("url") ?? "").trim();
   const text = String(form.get("text") ?? "").trim();
   const file = form.get("pdf");
