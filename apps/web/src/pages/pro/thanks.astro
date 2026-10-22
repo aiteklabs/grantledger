@@ -1,14 +1,17 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
+import CodeForm from "~/components/CodeForm.astro";
 import { t } from "~/i18n";
 export const prerender = false;
 
-// Stripe sends the buyer here after payment. The webhook usually lands first; when it has not yet, say so.
+// Stripe sends the buyer here after payment. The webhook usually lands first; when it has not yet, say so. Once the
+// account exists, the page asks for the code of the welcome email (the gl_login cookie tells /api/code the address).
 const d = t(Astro.locals.locale);
 const sessionId = Astro.url.searchParams.get("session_id") ?? "";
 const account = /^cs_[A-Za-z0-9_]+$/.test(sessionId) ? await env.DB.prepare("SELECT email FROM accounts WHERE stripe_session_id = ?").bind(sessionId).first<{ email: string }>() : null;
 const profiles = account ? ((await env.DB.prepare("SELECT COUNT(*) AS n FROM radars WHERE email = ? AND active = 1").bind(account.email).first<{ n: number }>())?.n ?? 0) : 0;
+if (account) Astro.cookies.set("gl_login", account.email, { path: "/", maxAge: 1800, httpOnly: true, secure: true, sameSite: "lax" });
 ---
 <Base title="Pro" noindex={true}>
   <div class="wrap" style="padding-top:3rem;max-width:720px">
@@ -17,6 +20,7 @@ const profiles = account ? ((await env.DB.prepare("SELECT COUNT(*) AS n FROM rad
       <>
         <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_ready_title}</h1>
         <p class="lead">{d.thanks_ready_text.replace("{email}", account.email)}{profiles > 0 && ` ${d.thanks_saved}`} {d.thanks_receipt}</p>
+        <CodeForm next="/me" />
       </>
     ) : (
       <>

@@ -1,6 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
+import CodeForm from "~/components/CodeForm.astro";
 import { currentAccount } from "~/lib/account";
 import { t } from "~/i18n";
 export const prerender = false;
@@ -19,7 +20,10 @@ const turnstile = env.TURNSTILE_SITE_KEY;
     <span class="kicker">Pro</span>
     <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.login_title}</h1>
     {sent ? (
-      <p class="callout" style="border-left-color:var(--moss)">{d.login_sent}</p>
+      <>
+        <p class="callout" style="border-left-color:var(--moss)">{d.login_sent}</p>
+        <CodeForm next={next} />
+      </>
     ) : (
       <>
         <p class="lead">{d.login_lead}</p>

@@ -1,6 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
+import CodeForm from "~/components/CodeForm.astro";
 import { PLANS, currentAccount } from "~/lib/account";
 import { issueCode, openDecision, readAuthorizeParams, sealDecision } from "~/lib/oauth";
 export const prerender = false;
@@ -77,12 +78,13 @@ if (typeof params !== "string" && !account) Astro.cookies.set("gl_next", selfUrl
     ) : sent ? (
       <>
         <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Check your email</h1>
-        <p class="lead">Open the sign-in link we sent. It brings you back here to finish connecting {appName}. The link works once and expires in 30 minutes.</p>
+        <p class="lead">Type the six-digit code from the email we sent, or open its link. Both bring you back here to finish connecting {appName}, and both work once, for 30 minutes.</p>
+        <CodeForm next={selfUrl} />
       </>
     ) : (
       <>
         <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Connect {appName} to GrantLedger</h1>
-        <p class="lead">Sign in with the email of your Pro account. We send a link, no password.</p>
+        <p class="lead">Sign in with the email of your Pro account. We send a six-digit code, no password.</p>
         {loginError === "email" && <p class="callout">That does not look like an email address.</p>}
         {loginError === "captcha" && <p class="callout">The captcha did not pass. Try again.</p>}
         {loginError === "code" && <p class="callout">Unknown access code.</p>}
@@ -91,7 +93,7 @@ if (typeof params !== "string" && !account) Astro.cookies.set("gl_next", selfUrl
           <input type="hidden" name="next" value={selfUrl} />
           <input type="hidden" name="from" value="oauth" />
           {turnstile && <div class="cf-turnstile" data-sitekey={turnstile} data-theme="auto"></div>}
-          <div><button class="btn" type="submit">Send the sign-in link</button></div>
+          <div><button class="btn" type="submit">Email me a code</button></div>
         </form>
         {env.REVIEW_EMAIL && env.REVIEW_TOKEN && (
           <details style="margin-top:1.5rem"><summary class="small muted">Have an access code?</summary>
@@ -103,7 +105,7 @@ if (typeof params !== "string" && !account) Astro.cookies.set("gl_next", selfUrl
           </details>
         )}
         <h2 style="margin-top:2.5rem">No Pro account yet?</h2>
-        <p>Assistants are part of Pro: one payment, no subscription. {PLANS.solo.name} {PLANS.solo.eur} EUR for one company profile, {PLANS.team.name} {PLANS.team.eur} EUR for three. Pay, open the welcome email, and you land back here.</p>
+        <p>Assistants are part of Pro: one payment, no subscription. {PLANS.solo.name} {PLANS.solo.eur} EUR for one company profile, {PLANS.team.name} {PLANS.team.eur} EUR for three. Pay, type the code from the welcome email, and you land back here.</p>
         <p><a class="btn" href="/pro">Get Pro</a></p>
       </>
     )}
