@@ -144,6 +144,9 @@ export const en = {
   me_signout: "Sign out",
   me_assistant: "Use your profiles in ChatGPT or Claude:",
   me_assistant_link: "how it works",
+  me_gpt_title: "GrantLedger in ChatGPT",
+  me_gpt_text: "Open the plugin and connect it with this email. Then ask for grants in the chat.",
+  me_gpt_open: "Open in ChatGPT",
   footer_text: "Built by Aitek Labs. Open source (MIT), open data (CC0). Every record links to its official publisher.",
 } as const;
 

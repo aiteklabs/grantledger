@@ -145,5 +145,8 @@ export const de: Dictionary = {
   me_signout: "Abmelden",
   me_assistant: "Nutzen Sie Ihre Profile in ChatGPT oder Claude:",
   me_assistant_link: "so geht es",
+  me_gpt_title: "GrantLedger in ChatGPT",
+  me_gpt_text: "Öffnen Sie das Plugin und verbinden Sie es mit dieser E-Mail. Dann fragen Sie im Chat nach Förderungen.",
+  me_gpt_open: "In ChatGPT öffnen",
   footer_text: "Gebaut von Aitek Labs. Open Source (MIT), offene Daten (CC0). Jeder Eintrag verweist auf seinen amtlichen Herausgeber.",
 };

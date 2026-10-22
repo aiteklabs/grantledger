@@ -4,7 +4,7 @@ import { consumeLoginCode, safeNext, sessionCookie } from "~/lib/account";
 
 export const prerender = false;
 
-// POST /api/code (code, next?, back): the six-digit code from the sign-in email, for the address in the gl_login
+// POST /api/code (code, next?, back): the six-digit code from the sign-in email, for the challenge in the gl_login
 // cookie that /api/login or /pro/thanks set. Success signs in and goes on like the link does (the gl_next cookie of an
 // assistant connection first); a wrong code goes back to the page it was typed on, with wrong=1.
 export const POST: APIRoute = async ({ request, cookies }) => {

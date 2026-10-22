@@ -1,7 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
-import { PLANS, currentAccount, profileLimit } from "~/lib/account";
+import { CHATGPT_PLUGIN_URL, PLANS, currentAccount, profileLimit } from "~/lib/account";
 import { listProfiles } from "~/lib/radar";
 import { fmtDate } from "~/lib/format";
 import { t } from "~/i18n";
@@ -23,6 +23,12 @@ const saved = Astro.url.searchParams.get("saved") === "1";
     {saved && <p class="callout" style="border-left-color:var(--moss)">{d.me_saved}</p>}
     {error === "full" && <p class="callout">{d.me_full.replace("{n}", String(limit))}{account.plan === "solo" && <> <a href="/pro">{d.me_move_team}</a></>}</p>}
 
+    <div class="callout" style="border-left-color:var(--moss);margin:1.5rem 0">
+      <p style="margin:0 0 0.8rem"><b>{d.me_gpt_title}</b> · {d.me_gpt_text}</p>
+      <a class="btn" href={CHATGPT_PLUGIN_URL} target="_blank" rel="noopener">{d.me_gpt_open}</a>
+      <span class="small muted" style="margin-left:0.8rem">{d.me_assistant} <a href="/assistant">{d.me_assistant_link}</a></span>
+    </div>
+
     {profiles.length === 0 && <p class="callout">{d.me_none}</p>}
     {profiles.length > 0 && (
       <table>
@@ -43,7 +49,6 @@ const saved = Astro.url.searchParams.get("saved") === "1";
       </table>
     )}
 
-    {profiles.length > 0 && <p class="small muted">{d.me_assistant} <a href="/assistant">{d.me_assistant_link}</a></p>}
     {profiles.length < limit && <p style="margin-top:1.5rem"><a class="btn" href="/find">{d.me_add}</a><span class="muted small" style="margin-left:0.8rem">{d.me_add_note}</span></p>}
 
     <h2 style="margin-top:2.5rem">{d.me_account}</h2>
