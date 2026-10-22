@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { hashIp, isAdmin } from "~/lib/auth";
 import { currentAccount } from "~/lib/account";
-import { verifyTurnstile } from "~/lib/turnstile";
 import { parseProfileForm } from "~/lib/profile-form";
 import { screenProfile } from "~/lib/screen";
 
@@ -14,7 +13,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const account = await currentAccount(request, env);
   if (!account && !(await isAdmin(request, env))) return redirect("/pro?from=find", 303);
   const form = await request.formData();
-  if (!(await verifyTurnstile(env, form, request.headers.get("cf-connecting-ip")))) return redirect("/find?error=captcha", 303);
   let profile;
   try {
     profile = parseProfileForm(form);

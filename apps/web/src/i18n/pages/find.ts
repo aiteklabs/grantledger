@@ -2,7 +2,7 @@
 
 export type Content = {
   generic_error: string;
-  errors: Record<"prefill_unavailable" | "pdf_only" | "pdf_size" | "bad_url" | "empty" | "form" | "captcha", string>;
+  errors: Record<"prefill_unavailable" | "pdf_only" | "pdf_size" | "bad_url" | "empty" | "form", string>;
   stuck: string;
   model: string;
   not_configured: string;
@@ -53,7 +53,6 @@ const en: Content = {
     bad_url: "That URL does not look valid.",
     empty: "Give a website, a PDF, or at least a few sentences.",
     form: "Some fields are invalid. Check country and sectors.",
-    captcha: "The anti-bot check did not pass. Reload the page and try again.",
   },
   stuck: "Prefill did not finish. Fill the form by hand, or start again with a smaller document.",
   model: "Model",
@@ -123,7 +122,6 @@ const fr: Content = {
     bad_url: "Cette URL ne semble pas valide.",
     empty: "Indiquez un site web, un PDF ou au moins quelques phrases.",
     form: "Certains champs sont invalides. Vérifiez le pays et les secteurs.",
-    captcha: "La vérification anti-robot a échoué. Rechargez la page et réessayez.",
   },
   stuck: "Le préremplissage n'a pas abouti. Remplissez le formulaire manuellement, ou recommencez avec un document plus petit.",
   model: "Modèle",
@@ -193,7 +191,6 @@ const de: Content = {
     bad_url: "Diese URL scheint ungültig zu sein.",
     empty: "Geben Sie eine Website, eine PDF-Datei oder zumindest einige Sätze an.",
     form: "Einige Felder sind ungültig. Prüfen Sie Land und Branchen.",
-    captcha: "Die Bot-Prüfung ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.",
   },
   stuck: "Das Vorausfüllen wurde nicht abgeschlossen. Füllen Sie das Formular von Hand aus oder beginnen Sie erneut mit einem kleineren Dokument.",
   model: "Modell",
@@ -263,7 +260,6 @@ const es: Content = {
     bad_url: "Esa URL no parece válida.",
     empty: "Indique un sitio web, un PDF o al menos unas frases.",
     form: "Algunos campos no son válidos. Compruebe el país y los sectores.",
-    captcha: "La verificación antibots no se superó. Recargue la página e inténtelo de nuevo.",
   },
   stuck: "El prellenado no terminó. Rellene el formulario a mano o vuelva a empezar con un documento más pequeño.",
   model: "Modelo",
@@ -333,7 +329,6 @@ const it: Content = {
     bad_url: "Questo URL non sembra valido.",
     empty: "Indichi un sito web, un PDF o almeno qualche frase.",
     form: "Alcuni campi non sono validi. Controlli paese e settori.",
-    captcha: "La verifica anti-bot non è riuscita. Ricarichi la pagina e riprovi.",
   },
   stuck: "La precompilazione non è stata completata. Compili il modulo manualmente oppure ricominci con un documento più piccolo.",
   model: "Modello",
@@ -403,7 +398,6 @@ const pt: Content = {
     bad_url: "Esse URL não parece válido.",
     empty: "Indique um sítio web, um PDF ou pelo menos algumas frases.",
     form: "Alguns campos são inválidos. Verifique o país e os setores.",
-    captcha: "A verificação anti-bot não foi aprovada. Recarregue a página e tente novamente.",
   },
   stuck: "O preenchimento automático não terminou. Preencha o formulário manualmente ou recomece com um documento mais pequeno.",
   model: "Modelo",
@@ -473,7 +467,6 @@ const nl: Content = {
     bad_url: "Die URL lijkt niet geldig.",
     empty: "Geef een website, een PDF of ten minste een paar zinnen op.",
     form: "Sommige velden zijn ongeldig. Controleer land en sectoren.",
-    captcha: "De anti-botcontrole is niet geslaagd. Laad de pagina opnieuw en probeer het nog eens.",
   },
   stuck: "Automatisch invullen is niet voltooid. Vul het formulier handmatig in of begin opnieuw met een kleiner document.",
   model: "Model",
@@ -543,7 +536,6 @@ const pl: Content = {
     bad_url: "Ten adres URL wygląda na nieprawidłowy.",
     empty: "Podaj stronę internetową, plik PDF lub przynajmniej kilka zdań.",
     form: "Niektóre pola są nieprawidłowe. Sprawdź kraj i sektory.",
-    captcha: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie.",
   },
   stuck: "Automatyczne wypełnianie nie zostało ukończone. Wypełnij formularz ręcznie lub zacznij od nowa z mniejszym dokumentem.",
   model: "Model",
