@@ -130,26 +130,46 @@ export async function recordPayment(db: D1Database, p: { email: string; plan: Pl
   return true;
 }
 
-// Emails a single-use sign-in link. Silent when no paid account exists, so the form cannot be used to probe emails.
+// Emails a single-use sign-in link and a six-digit code for the same login row. Silent when no paid account exists, so
+// the form cannot be used to probe emails. The code is in the subject, so a phone notification is enough to read it.
 export async function sendMagicLink(env: Env, email: string, opts: { welcome?: boolean; next?: string } = {}): Promise<void> {
   const account = await getAccount(env.DB, email);
   if (!account?.paid_at) return;
   const token = randomToken();
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(6, "0");
   const now = Date.now();
-  await env.DB.prepare("INSERT INTO logins (token, email, created_at, expires_at) VALUES (?, ?, ?, ?)").bind(token, account.email, new Date(now).toISOString(), new Date(now + LINK_MINUTES * 60_000).toISOString()).run();
+  await env.DB.prepare("INSERT INTO logins (token, email, code, created_at, expires_at) VALUES (?, ?, ?, ?, ?)").bind(token, account.email, code, new Date(now).toISOString(), new Date(now + LINK_MINUTES * 60_000).toISOString()).run();
   const link = `${env.SITE_URL}/auth?token=${token}${opts.next ? `&next=${encodeURIComponent(opts.next)}` : ""}`;
   const plan = PLANS[account.plan];
   const title = opts.welcome ? `Your grantledger ${plan.name} is ready` : "Sign in to grantledger";
   const intro = opts.welcome
-    ? `Thank you. One payment, no subscription: ${plan.profiles === 1 ? "one company profile" : `${plan.profiles} company profiles`}, AI prefill, screening against every current call, and a weekly email of new matching calls. Open the link below to sign in.`
-    : "Open the link below to sign in. It works once and expires in 30 minutes.";
-  const text = `${title}\n\n${intro}\n\n${link}\n\nIf you did not ask for this, ignore this email.`;
+    ? `Thank you. One payment, no subscription: ${plan.profiles === 1 ? "one company profile" : `${plan.profiles} company profiles`}, AI prefill, screening against every current call, and a weekly email of new matching calls. To sign in, type this code on the page you came from, or open the link below.`
+    : "Type this code on the page where you asked for it, or open the link below. Both work once and expire in 30 minutes.";
+  const text = `${title}\n\n${intro}\n\nCode: ${code}\n\n${link}\n\nIf you did not ask for this, ignore this email.`;
   const html = `<!doctype html><html><body style="margin:0;background:#f4efe6;font-family:Georgia,serif;color:#171511"><div style="max-width:560px;margin:0 auto;padding:32px 20px">
 <p style="font-family:monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#b4451f;margin:0 0 8px">grantledger</p>
 <h1 style="font-size:24px;margin:0 0 16px">${title}</h1><p style="font-size:16px;line-height:1.5">${intro}</p>
+<p style="font-family:monospace;font-size:32px;letter-spacing:.3em;font-weight:700;margin:24px 0">${code}</p>
 <p style="margin:24px 0"><a href="${link}" style="display:inline-block;background:#171511;color:#f4efe6;padding:12px 20px;text-decoration:none;font-weight:600">Sign in</a></p>
 <p style="font-size:13px;color:#6b675f">If the button does not work, open this address: ${link}<br>If you did not ask for this, ignore this email.</p></div></body></html>`;
-  await env.EMAIL.send({ to: account.email, from: { email: env.MAIL_FROM, name: "grantledger" }, subject: title, text, html });
+  await env.EMAIL.send({ to: account.email, from: { email: env.MAIL_FROM, name: "grantledger" }, subject: `${title} (code ${code})`, text, html });
+}
+
+// Exchanges the six-digit code of a sign-in email for the account. The code and the link share one login row, so
+// either spends both. Every guess first counts against every open code of the email, in the same batch, so even
+// parallel guesses get five tries in all; a new email starts a fresh count.
+export async function consumeLoginCode(db: D1Database, email: string, code: string): Promise<string | null> {
+  if (!email || !/^\d{6}$/.test(code)) return null;
+  const now = new Date().toISOString();
+  const open = "email = ? AND used_at IS NULL AND expires_at > ?";
+  const [, spent] = await db.batch<{ email: string }>([
+    db.prepare(`UPDATE logins SET attempts = attempts + 1 WHERE ${open}`).bind(email, now),
+    db.prepare(`UPDATE logins SET used_at = ? WHERE ${open} AND code = ? AND attempts <= 5 RETURNING email`).bind(now, email, now, code),
+  ]);
+  const row = spent?.results[0];
+  if (!row) return null;
+  await db.prepare("UPDATE accounts SET last_login_at = ? WHERE email = ?").bind(now, row.email).run();
+  return row.email;
 }
 
 // Exchanges a magic-link token for the email it was sent to. Single use, 30 minutes.
