@@ -122,6 +122,8 @@ export const nl: Dictionary = {
   thanks_wait_title: "Bedankt. Uw account wordt klaargezet.",
   thanks_wait_text: "Stripe bevestigt de betaling binnen een minuut, daarna landt een inloglink in uw inbox. Komt er binnen een uur niets, schrijf dan naar contact@aiteklabs.com met uw bon.",
   thanks_refresh: "Vernieuwen",
+  thanks_again_title: "Uw account is klaar.",
+  thanks_again_text: "De code uit de welkomstmail is verlopen of al gebruikt. Log in met {email} om een nieuwe te krijgen.",
   me_title: "Uw profielen",
   me_lead_one: "Eén profiel.",
   me_lead_n: "Tot {n} profielen.",

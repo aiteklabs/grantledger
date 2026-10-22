@@ -122,6 +122,8 @@ export const it: Dictionary = {
   thanks_wait_title: "Grazie. Stiamo preparando il vostro account.",
   thanks_wait_text: "Stripe conferma il pagamento entro un minuto, poi un link di accesso arriva nella vostra casella. Se non arriva nulla entro un'ora, scrivete a contact@aiteklabs.com con la ricevuta.",
   thanks_refresh: "Aggiorna",
+  thanks_again_title: "Il vostro account è pronto.",
+  thanks_again_text: "Il codice dell'email di benvenuto è scaduto o è già stato usato. Accedete con {email} per riceverne uno nuovo.",
   me_title: "I vostri profili",
   me_lead_one: "Un profilo.",
   me_lead_n: "Fino a {n} profili.",

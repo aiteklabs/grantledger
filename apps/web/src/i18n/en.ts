@@ -121,6 +121,8 @@ export const en = {
   thanks_wait_title: "Thank you. Setting up your account.",
   thanks_wait_text: "Stripe confirms the payment within a minute, then a sign-in link reaches your inbox. If nothing arrives within an hour, write to contact@aiteklabs.com with your receipt.",
   thanks_refresh: "Refresh",
+  thanks_again_title: "Your account is ready.",
+  thanks_again_text: "The code from the welcome email has expired or was already used. Sign in with {email} to get a new one.",
   me_title: "Your profiles",
   me_lead_one: "One profile.",
   me_lead_n: "Up to {n} profiles.",
