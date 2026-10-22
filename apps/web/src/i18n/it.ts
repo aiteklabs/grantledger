@@ -112,6 +112,7 @@ export const it: Dictionary = {
   auth_expired_title: "Questo link è scaduto o è già stato usato.",
   auth_expired_text: "I link valgono una volta, per 30 minuti. Chiedetene uno nuovo.",
   auth_new: "Nuovo link",
+  auth_confirm: "Premete il pulsante per completare l'accesso.",
   thanks_ready_title: "Grazie. Il link di accesso è in arrivo.",
   thanks_ready_text: "L'abbiamo inviato a {email}. Apritelo per raggiungere i vostri profili.",
   thanks_saved: "L'analisi da cui venite è salvata come primo profilo.",
