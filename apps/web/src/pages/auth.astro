@@ -1,0 +1,43 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { consumeMagicLink, safeNext, sessionCookie } from "~/lib/account";
+import { t } from "~/i18n";
+export const prerender = false;
+
+// GET /auth?token=...: the magic link. It only shows a sign-in button, because mail scanners (Microsoft Safe Links
+// and the like) open every link in a message before the reader does, and a token spent on GET was dead by the time
+// the person clicked. The POST of that button spends the token, sets the session cookie and sends the account to its
+// profiles, or back to the assistant connection it was in the middle of (the gl_next cookie set by /oauth/authorize).
+const d = t(Astro.locals.locale);
+const token = Astro.url.searchParams.get("token") ?? "";
+const post = Astro.request.method === "POST";
+if (post) {
+  const resume = Astro.cookies.get("gl_next")?.value;
+  const next = safeNext(resume || Astro.url.searchParams.get("next"));
+  const email = await consumeMagicLink(env.DB, token);
+  if (email) {
+    const headers = new Headers({ location: next, "set-cookie": await sessionCookie(env, email) });
+    if (resume) headers.append("set-cookie", "gl_next=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax");
+    return new Response(null, { status: 303, headers });
+  }
+}
+const ready = !post && token !== "";
+---
+<Base title={d.login_title} noindex={true}>
+  <div class="wrap" style="padding-top:3rem;max-width:720px">
+    <span class="kicker">{d.login_title}</span>
+    {ready ? (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.auth_confirm}</h1>
+        <form method="post"><button class="btn" type="submit">{d.login_title}</button></form>
+      </>
+    ) : (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.auth_expired_title}</h1>
+        <p class="lead">{d.auth_expired_text}</p>
+        <p><a class="btn" href="/login">{d.auth_new}</a></p>
+      </>
+    )}
+  </div>
+</Base>

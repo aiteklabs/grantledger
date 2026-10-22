@@ -1,0 +1,38 @@
+name: local-runner
+# Sources that refuse Cloudflare egress are crawled from GitHub's runners and pushed to the Worker's /ingest endpoint.
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: Space-separated source ids
+        default: se_vinnova be_vlaio
+permissions:
+  contents: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: pnpm install --frozen-lockfile
+      - name: Crawl and push
+        working-directory: packages/ingest
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          SOURCES: ${{ github.event.inputs.sources || 'se_vinnova be_vlaio' }}
+        # Every source runs even when one fails; the job still fails at the end so a broken crawl is visible.
+        run: |
+          status=0
+          for s in $SOURCES; do
+            case "$s" in
+              *[!a-z_]*) echo "invalid source id: $s"; status=1; continue ;;
+            esac
+            echo "== $s"
+            bun scripts/push-local.ts "$s" || { echo "$s failed"; status=1; }
+          done
+          exit $status

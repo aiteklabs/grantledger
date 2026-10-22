@@ -1,0 +1,101 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import GrantRow from "~/components/GrantRow.astro";
+import { searchGrants } from "~/lib/db";
+import { COUNTRY_NAMES, FUNDING_TYPE_LABELS, SOURCE_NAMES, fmtInt } from "~/lib/format";
+import { localePath, t } from "~/i18n";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const sp = Astro.url.searchParams;
+const params = {
+  q: sp.get("q") ?? "",
+  country: sp.get("country") ?? "",
+  status: sp.get("status") ?? "",
+  type: sp.get("type") ?? "",
+  beneficiary: sp.get("beneficiary") ?? "",
+  source: sp.get("source") ?? "",
+  sort: (sp.get("sort") as "deadline" | "recent" | "relevance" | null) ?? (sp.get("q") ? "relevance" : "deadline"),
+  page: Number(sp.get("page") ?? "1") || 1,
+  pageSize: sp.get("per") === "all" ? 1000 : Number(sp.get("per") ?? "20") || 20,
+};
+const PER_PAGE: [string, string][] = [["20", "20 per page"], ["50", "50 per page"], ["100", "100 per page"], ["all", "All (max 1,000)"]];
+const per = sp.get("per") ?? "20";
+const result = await searchGrants(env.DB, params);
+const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
+// The middleware strips the locale prefix before this page runs, so links put it back.
+const locale = Astro.locals.locale;
+const link = (page: number) => {
+  const u = new URL(Astro.url);
+  u.searchParams.set("page", String(page));
+  return localePath(locale, u.pathname) + u.search;
+};
+const title = params.q ? `${d.grants_matching} "${params.q}"` : d.grants_all;
+// Quick status chips keep every other filter and restart at page 1.
+const statusLink = (status: string) => {
+  const u = new URL(Astro.url);
+  if (status) u.searchParams.set("status", status);
+  else u.searchParams.delete("status");
+  u.searchParams.delete("page");
+  return localePath(locale, u.pathname) + u.search;
+};
+const chips: [string, string, string][] = [["", d.status_current, ""], ["open", d.status_open_now, "open"], ["forthcoming", d.status_opening_soon, "soon"], ["closed", d.status_archive, ""]];
+---
+<Base title={title} description={`${fmtInt(result.total)} public funding opportunities. Filter by country, status, funding type and beneficiary.`}>
+  <div class="wrap" style="padding-top:2.5rem">
+    <span class="kicker">{d.nav_grants}</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,3rem)">{title}</h1>
+    <nav class="chips" aria-label="Status">
+      {chips.map(([v, label, tone]) => <a class={`chip ${tone} ${params.status === v ? "on" : ""}`} href={statusLink(v)} aria-current={params.status === v ? "true" : undefined}>{label}</a>)}
+    </nav>
+    <form method="get" action={localePath(locale, "/grants")}>
+      <div class="search" style="max-width:100%">
+        <input type="search" name="q" value={params.q} placeholder={d.search_placeholder} aria-label={d.search_placeholder} />
+        <button type="submit">{d.search_button}</button>
+      </div>
+      <div class="filters">
+        <select name="country" aria-label="Country">
+          <option value="">All countries</option>
+          <option value="EUROPE" selected={params.country === "EUROPE"}>All Europe (every European country plus EU-wide)</option>
+          {Object.entries(COUNTRY_NAMES).filter(([c]) => ["EU", "DE", "FR", "IT", "ES", "PL", "NL", "BE", "AT", "PT", "SE", "FI", "DK", "NO", "IE", "CZ", "GR", "RO", "LT", "GB", "US"].includes(c)).map(([c, n]) => <option value={c} selected={params.country === c}>{n}</option>)}
+        </select>
+        <select name="status" aria-label="Status">
+          <option value="">{d.status_current}</option>
+          <option value="open" selected={params.status === "open"}>{d.status_open}</option>
+          <option value="forthcoming" selected={params.status === "forthcoming"}>{d.status_forthcoming}</option>
+          <option value="closed" selected={params.status === "closed"}>{d.status_archive}</option>
+        </select>
+        <select name="type" aria-label="Funding type">
+          <option value="">Any type</option>
+          {Object.entries(FUNDING_TYPE_LABELS).map(([k, v]) => <option value={k} selected={params.type === k}>{v}</option>)}
+        </select>
+        <select name="beneficiary" aria-label="Beneficiary">
+          <option value="">Any beneficiary</option>
+          {["company", "sme", "startup", "individual", "research_org", "public_body", "ngo"].map((b) => <option value={b} selected={params.beneficiary === b}>{b.replace("_", " ")}</option>)}
+        </select>
+        <select name="source" aria-label="Source">
+          <option value="">Any source</option>
+          {Object.entries(SOURCE_NAMES).map(([k, v]) => <option value={k} selected={params.source === k}>{v}</option>)}
+        </select>
+        <select name="sort" aria-label="Sort">
+          <option value="deadline" selected={params.sort === "deadline"}>Deadline first</option>
+          <option value="recent" selected={params.sort === "recent"}>Recently added</option>
+          {params.q && <option value="relevance" selected={params.sort === "relevance"}>Relevance</option>}
+        </select>
+        <select name="per" aria-label="Results per page">
+          {PER_PAGE.map(([v, label]) => <option value={v} selected={per === v}>{label}</option>)}
+        </select>
+        <button class="btn ghost" type="submit" style="padding:0.45rem 0.9rem">Apply</button>
+      </div>
+    </form>
+    <p class="muted small mono">{fmtInt(result.total)} {d.grants_results} · {d.grants_page} {result.page} {d.grants_of} {pages}</p>
+    <ul class="ledger">{result.items.map((g) => <GrantRow grant={g} locale={Astro.locals.locale} />)}</ul>
+    {result.items.length === 0 && <p class="callout">No records match. Try fewer filters or another keyword. Titles are in the source language: Spanish for BDNS, French for aides-entreprises.</p>}
+    <nav class="pager" aria-label="Pagination">
+      {result.page > 1 && <a href={link(result.page - 1)}>← previous</a>}
+      <span>{result.page} / {pages}</span>
+      {result.page < pages && <a href={link(result.page + 1)}>next →</a>}
+    </nav>
+  </div>
+</Base>
