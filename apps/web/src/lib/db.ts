@@ -191,6 +191,9 @@ export interface Stats {
 // Live counts: "open" and per-source/country "open" only count calls whose deadline has not passed.
 // "archived" is the closed history, kept and searchable but never mixed into the live numbers.
 export async function getStats(db: D1Database): Promise<Stats> {
+  return cachedJson("https://grantledger.cache/stats", STATS_TTL_S, () => queryStats(db));
+}
+async function queryStats(db: D1Database): Promise<Stats> {
   const now = new Date().toISOString();
   const CURRENT = "status IN ('open','forthcoming') AND (closes_at IS NULL OR closes_at >= ?)";
   const [totals, versions, sources, countries] = await db.batch([
@@ -211,26 +214,32 @@ export async function getStats(db: D1Database): Promise<Stats> {
   };
 }
 
-// Four numbers shown in the footer of every page, from the same tables as everything else.
-// Cached at the edge for an hour: the three counts walk the whole grants table (70k rows read
-// per call), the footer is on every page, and crawlers open 30k pages a day. The numbers only
-// move when the nightly ingest runs.
-export interface SiteFacts { active: number; countries: number; sources: number; refreshed: string | null }
-const SITE_FACTS_CACHE_KEY = "https://grantledger.cache/site-facts";
-const SITE_FACTS_TTL_S = 3600;
-export async function getSiteFacts(db: D1Database): Promise<SiteFacts> {
-  // Astro's DOM lib shadows the Workers CacheStorage type, which is the one with `default`.
+// Edge cache for the aggregate queries (stats, footer facts, coverage register). Each of them
+// walks the whole grants table (70k+ rows read per call), they sit on every page or on pages
+// crawlers open all day (30k views a day), and the numbers only move when the nightly ingest
+// and the 05:00 enrichment run. One D1 pass per data center per TTL instead of one per view.
+// Astro's DOM lib shadows the Workers CacheStorage type, which is the one with `default`.
+async function cachedJson<T>(key: string, ttlS: number, load: () => Promise<T>): Promise<T> {
   const cache = (caches as CacheStorage & { default: Cache }).default;
-  const cached = await cache.match(SITE_FACTS_CACHE_KEY);
-  if (cached) return (await cached.json()) as SiteFacts;
-  const facts = await querySiteFacts(db);
+  const cached = await cache.match(key);
+  if (cached) return (await cached.json()) as T;
+  const value = await load();
   await cache.put(
-    SITE_FACTS_CACHE_KEY,
-    new Response(JSON.stringify(facts), {
-      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${SITE_FACTS_TTL_S}` },
+    key,
+    new Response(JSON.stringify(value), {
+      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttlS}` },
     }),
   );
-  return facts;
+  return value;
+}
+const STATS_TTL_S = 6 * 3600;
+const SITE_FACTS_TTL_S = 6 * 3600;
+const SOURCE_REGISTER_TTL_S = 3600;
+
+// Four numbers shown in the footer of every page, from the same tables as everything else.
+export interface SiteFacts { active: number; countries: number; sources: number; refreshed: string | null }
+export async function getSiteFacts(db: D1Database): Promise<SiteFacts> {
+  return cachedJson("https://grantledger.cache/site-facts", SITE_FACTS_TTL_S, () => querySiteFacts(db));
 }
 async function querySiteFacts(db: D1Database): Promise<SiteFacts> {
   const now = new Date().toISOString();
@@ -249,6 +258,9 @@ async function querySiteFacts(db: D1Database): Promise<SiteFacts> {
 // One row per feed for the coverage register: what is live, when it was last checked, and whether the last crawl worked.
 export interface SourceHealth { source: string; country: string; current: number; last_seen: string | null; last_run: string | null; error: string | null }
 export async function getSourceRegister(db: D1Database): Promise<SourceHealth[]> {
+  return cachedJson("https://grantledger.cache/source-register", SOURCE_REGISTER_TTL_S, () => querySourceRegister(db));
+}
+async function querySourceRegister(db: D1Database): Promise<SourceHealth[]> {
   const now = new Date().toISOString();
   const [feeds, runs] = await db.batch([
     db.prepare(`SELECT source, MIN(country) AS country, SUM(CASE WHEN status IN ('open','forthcoming') AND (closes_at IS NULL OR closes_at >= ?) THEN 1 ELSE 0 END) AS current, MAX(last_seen_at) AS last_seen FROM grants GROUP BY source`).bind(now),
