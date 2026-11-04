@@ -22,9 +22,9 @@ export async function setLimitUsd(db: D1Database, usd: number): Promise<void> {
 
 export async function monthSpend(db: D1Database): Promise<Spend> {
   const month = new Date().toISOString().slice(0, 7);
-  const like = `${month}%`;
+  // A half-open range uses the created_at index; LIKE 'YYYY-MM%' scanned the whole table on every call.
   const [row, limit] = await Promise.all([
-    db.prepare("SELECT SUM(input_tokens) AS i, SUM(output_tokens) AS o, SUM(kind = 'enrichment') AS e, SUM(kind = 'prefill') AS p FROM model_usage WHERE created_at LIKE ?").bind(like).first<{ i: number | null; o: number | null; e: number | null; p: number | null }>(),
+    db.prepare("SELECT SUM(input_tokens) AS i, SUM(output_tokens) AS o, SUM(kind = 'enrichment') AS e, SUM(kind = 'prefill') AS p FROM model_usage WHERE created_at >= ? AND created_at < ?").bind(`${month}-01`, `${month}-99`).first<{ i: number | null; o: number | null; e: number | null; p: number | null }>(),
     getLimitUsd(db),
   ]);
   const input = row?.i ?? 0;

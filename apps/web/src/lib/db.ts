@@ -104,7 +104,14 @@ export function keywordQuery(kw: string): string {
   return `NEAR(${words.map(ftsTerm).join(" ")}, 10)`;
 }
 
+// Listing pages are the crawlers' favourite: every filter, sort and page combination is a link, and each
+// one costs a COUNT plus a sorted scan of the live calls (about 66k rows read per call, 900 calls a day).
+// The result only moves with the nightly ingest, so one D1 pass per distinct query per data center per hour.
 export async function searchGrants(db: D1Database, p: SearchParams): Promise<{ items: GrantView[]; total: number; page: number; pageSize: number }> {
+  const key = `https://grantledger.cache/search?${encodeURIComponent(JSON.stringify(p, Object.keys(p).sort()))}`;
+  return cachedJson(key, SEARCH_TTL_S, () => querySearchGrants(db, p));
+}
+async function querySearchGrants(db: D1Database, p: SearchParams): Promise<{ items: GrantView[]; total: number; page: number; pageSize: number }> {
   const page = Math.max(1, p.page ?? 1);
   // "All" on the list page asks for 1000: enough for any filtered view, bounded for the archive.
   const pageSize = Math.min(1000, Math.max(5, p.pageSize ?? 20));
@@ -219,7 +226,7 @@ async function queryStats(db: D1Database): Promise<Stats> {
 // crawlers open all day (30k views a day), and the numbers only move when the nightly ingest
 // and the 05:00 enrichment run. One D1 pass per data center per TTL instead of one per view.
 // Astro's DOM lib shadows the Workers CacheStorage type, which is the one with `default`.
-async function cachedJson<T>(key: string, ttlS: number, load: () => Promise<T>): Promise<T> {
+export async function cachedJson<T>(key: string, ttlS: number, load: () => Promise<T>): Promise<T> {
   const cache = (caches as CacheStorage & { default: Cache }).default;
   const cached = await cache.match(key);
   if (cached) return (await cached.json()) as T;
@@ -235,6 +242,8 @@ async function cachedJson<T>(key: string, ttlS: number, load: () => Promise<T>):
 const STATS_TTL_S = 6 * 3600;
 const SITE_FACTS_TTL_S = 6 * 3600;
 const SOURCE_REGISTER_TTL_S = 3600;
+const SEARCH_TTL_S = 3600;
+export const SITEMAP_TTL_S = 6 * 3600;
 
 // Four numbers shown in the footer of every page, from the same tables as everything else.
 export interface SiteFacts { active: number; countries: number; sources: number; refreshed: string | null }
