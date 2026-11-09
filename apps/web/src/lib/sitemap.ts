@@ -21,6 +21,11 @@ export function urlEntries(base: string, path: string, lastmod?: string): string
   return locales.map((l) => `<url><loc>${esc(base + localePath(l, path))}</loc>${mod}${alternates(base, path)}</url>`).join("");
 }
 
+// A single <url> for a page whose body is the same under every locale (grant pages): only the default-locale URL is listed.
+export function urlEntry(base: string, path: string, lastmod?: string): string {
+  return `<url><loc>${esc(base + path)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`;
+}
+
 export function urlset(entries: string): string {
   return `${XML_HEAD}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${entries}</urlset>`;
 }
