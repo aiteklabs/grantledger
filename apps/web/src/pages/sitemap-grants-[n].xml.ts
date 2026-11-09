@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { GRANTS_PER_SITEMAP, OPEN_GRANTS_WHERE, urlEntries, urlset, xmlResponse } from "~/lib/sitemap";
+import { GRANTS_PER_SITEMAP, OPEN_GRANTS_WHERE, urlEntry, urlset, xmlResponse } from "~/lib/sitemap";
 import { SITEMAP_TTL_S, cachedJson } from "~/lib/db";
 
 export const prerender = false;
@@ -15,6 +15,6 @@ export const GET: APIRoute = async ({ params }) => {
     return r.results;
   });
   if (rows.length === 0) return new Response("Not found", { status: 404 });
-  const entries = rows.map((r) => urlEntries(env.SITE_URL, `/grants/${encodeURI(r.id)}`, r.modified.slice(0, 10)));
+  const entries = rows.map((r) => urlEntry(env.SITE_URL, `/grants/${encodeURI(r.id)}`, r.modified.slice(0, 10)));
   return xmlResponse(urlset(entries.join("")));
 };
