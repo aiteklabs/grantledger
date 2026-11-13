@@ -15,7 +15,9 @@ export default {
   // 05:00 UTC: enrich up to 150 newly crawled open calls through the site's endpoint, under its monthly budget.
   // Monday 06:00 UTC: the weekly Radar emails for Pro profiles, through the site's endpoint.
   async scheduled(controller, env, ctx) {
-    if (controller.cron === "0 6 * * 1") {
+    // Matched on the hour: the day is written MON in the config (a bare 1 means Sunday on Cloudflare) and the
+    // runtime may hand it back in another spelling.
+    if (controller.cron.startsWith("0 6 ")) {
       if (!env.WEB_URL || !env.ADMIN_TOKEN) return;
       ctx.waitUntil(fetch(`${env.WEB_URL}/api/radar-send`, { method: "POST", headers: { authorization: `Bearer ${env.ADMIN_TOKEN}`, "content-type": "application/json" } }));
       return;

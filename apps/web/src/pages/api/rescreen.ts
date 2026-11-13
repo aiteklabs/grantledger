@@ -33,7 +33,5 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     user_agent: "",
     started: Date.now(),
   });
-  // Saved profiles follow the form they were saved from.
-  await env.DB.prepare("UPDATE radars SET form = ?, company_name = ? WHERE fit_check_id = ? AND active = 1").bind(JSON.stringify(parsed.data), parsed.data.company_name || null, id).run();
   return redirect(back, 303);
 };

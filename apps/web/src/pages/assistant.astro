@@ -30,7 +30,7 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <pre class="callout mono" style="margin:1rem 0"><code>{mcpUrl}</code></pre>
     {flag === "disconnected" && <p class="callout" style="border-left-color:var(--moss)">Every assistant is disconnected. Each one asks you to sign in again on its next use.</p>}
     {!account && <p><a class="btn" href="/pro">Get Pro</a> <span class="small muted" style="margin-left:0.8rem">One payment, no subscription. No account yet? The sign-in page offers Pro too, and brings you back once paid.</span></p>}
-    <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT. Read only. Sixty requests per minute.</p>
+    <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, <span class="mono">my_profiles</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT. Read only. Sixty requests per minute.</p>
 
     <h3 id="chatgpt">ChatGPT</h3>
     <p><a class="btn" href={CHATGPT_PLUGIN_URL} target="_blank" rel="noopener">Open GrantLedger in ChatGPT</a></p>
@@ -53,6 +53,7 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <p>Screen your company on this site, then paste the result link in the chat. The link looks like this:</p>
     <pre class="callout mono" style="margin:1rem 0"><code>{site}/fit/&lt;id&gt;</code></pre>
     <p>The assistant calls <span class="mono">get_fit</span> and receives the profile you confirmed and every call screened for it with the rule each verdict relies on. Then ask it to rank, explain a gap, draft a first email to the funder, or compare two calls.</p>
+    <p>Once you have saved a profile, no link is needed: ask "what is new for my profile?" and the assistant reads your saved profiles and the calls the Radar emailed you through <span class="mono">my_profiles</span>.</p>
     {account && profiles.length > 0 && (
       <p class="callout" style="border-left-color:var(--moss)">Your links: {profiles.map((p, i) => <><span class="mono">{site}/fit/{p.fit_check_id}</span>{i < profiles.length - 1 ? " · " : ""}</>)}</p>
     )}

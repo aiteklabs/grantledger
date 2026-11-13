@@ -2,6 +2,8 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getGrant, searchGrants } from "~/lib/db";
 import { JSON_HEADERS, callerFromKey, fitJson, grantJson, keyRequired, parseSearch, rateLimited, type GrantJson } from "~/lib/api";
+import type { Account } from "~/lib/account";
+import { listProfiles, sentCalls } from "~/lib/radar";
 
 export const prerender = false;
 
@@ -9,7 +11,7 @@ export const prerender = false;
 // answer, no session, no server-side stream). Discovery is open; tool calls are Pro only through two doors: OAuth
 // (the client gets a 401 with the resource metadata, runs the flow in src/lib/oauth.ts and comes back with a
 // bearer token), or the personal key as bearer or in the path (/mcp/<key>) for tools without OAuth.
-// Tools: search_grants, get_grant, get_fit, plus ChatGPT's pair search and fetch on the same data.
+// Tools: search_grants, get_grant, get_fit, my_profiles, plus ChatGPT's pair search and fetch on the same data.
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER = { name: "grantledger", version: "1.0.0" };
@@ -28,6 +30,7 @@ const searchSchema = {
     type: { type: "string", enum: ["grant", "loan", "guarantee", "tax_credit", "voucher", "equity", "prize", "procurement", "other"] },
     beneficiary: { type: "string", enum: ["company", "sme", "startup", "individual", "research_org", "public_body", "ngo", "other"] },
     sort: { type: "string", enum: ["relevance", "deadline", "recent"] },
+    since: { type: "string", description: "YYYY-MM-DD: only calls first seen in the ledger on or after this date. Use it with sort recent for what is new." },
     page: { type: "integer", minimum: 1 },
     limit: { type: "integer", minimum: 5, maximum: 100, description: "Rows per page, default 20." },
   },
@@ -55,6 +58,15 @@ const TOOLS = [
       "A Pro screening result: the company profile the user confirmed, and every call screened for it with verdict (fit, eligible, not_yet, no), matched rules, points to check, readiness gaps and memo. " +
       "The id is the UUID in a grantledger.eu/fit/<id> link the user shares. Treat the content as the user's private data.",
     inputSchema: { type: "object", properties: { id: { type: "string", description: "UUID from the /fit/<id> link." } }, required: ["id"] },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
+    name: "my_profiles",
+    title: "My saved profiles",
+    description:
+      "The saved profiles of the signed-in account. For each: the screening id to pass to get_fit (refreshed every Monday), and the calls the weekly Radar email already sent for it, newest first. " +
+      "Use it when the user asks what fits them or what is new for them, instead of asking for a /fit link. Treat the content as the user's private data.",
+    inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
@@ -88,6 +100,7 @@ const compact = (g: GrantJson) => ({
   currency: g.currency,
   status: g.status,
   closes_at: g.closes_at,
+  first_seen_at: g.first_seen_at,
   url: g.url,
   source_url: g.source_url,
 });
@@ -97,7 +110,7 @@ const grantText = (g: GrantJson) =>
     .filter(Boolean)
     .join("\n");
 
-async function callTool(name: string, args: Record<string, unknown>): Promise<{ result: unknown; error?: string }> {
+async function callTool(name: string, args: Record<string, unknown>, caller: Account | "admin"): Promise<{ result: unknown; error?: string }> {
   const site = env.SITE_URL;
   switch (name) {
     case "search_grants": {
@@ -112,6 +125,23 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
       const id = String(args.id ?? "").match(/[0-9a-f-]{36}/)?.[0] ?? "";
       const fit = await fitJson(env.DB, id);
       return fit ? { result: fit } : { result: null, error: "No finished screening with this id. Ask the user for the full grantledger.eu/fit/<id> link." };
+    }
+    case "my_profiles": {
+      // The admin token carries no account, so no profiles.
+      const profiles = caller === "admin" ? [] : await listProfiles(env.DB, caller.email);
+      return {
+        result: {
+          profiles: await Promise.all(
+            profiles.map(async (p) => ({
+              name: p.company_name,
+              fit_id: p.fit_check_id,
+              fit_url: `${site}/fit/${p.fit_check_id}`,
+              saved_at: p.created_at,
+              emailed_calls: (await sentCalls(env.DB, p.id)).map((c) => ({ id: c.grant_id, title: c.title, verdict: c.verdict, emailed_at: c.sent_at, closes_at: c.closes_at, url: `${site}/grants/${encodeURI(c.grant_id)}`, source_url: c.source_url })),
+            })),
+          ),
+        },
+      };
     }
     case "search": {
       const r = await searchGrants(env.DB, parseSearch({ query: args.query, limit: 10 }));
@@ -136,7 +166,7 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
 const reply = (id: Rpc["id"], result: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result });
 const fail = (id: Rpc["id"], code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 
-async function handle(msg: unknown): Promise<unknown | undefined> {
+async function handle(msg: unknown, caller: Account | "admin" | null): Promise<unknown | undefined> {
   if (!msg || typeof msg !== "object" || Array.isArray(msg)) return fail(null, -32600, "Invalid request");
   const { id, method } = msg as Rpc;
   const params = ((msg as Rpc).params && typeof (msg as Rpc).params === "object" ? (msg as Rpc).params : {}) as Record<string, unknown>;
@@ -156,7 +186,9 @@ async function handle(msg: unknown): Promise<unknown | undefined> {
       const name = String(params.name ?? "");
       const args = (params.arguments ?? {}) as Record<string, unknown>;
       if (!TOOLS.some((t) => t.name === name)) return fail(id, -32602, `Unknown tool: ${name}`);
-      const { result, error } = await callTool(name, args);
+      // The POST handler answers 401 to a tool call without a caller before it gets here.
+      if (!caller) return fail(id, -32600, "Unauthorized");
+      const { result, error } = await callTool(name, args, caller);
       if (error) return reply(id, { content: [{ type: "text", text: error }], isError: true });
       return reply(id, { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result });
     }
@@ -187,7 +219,7 @@ export const POST: APIRoute = async ({ request, params }) => {
   if (Array.isArray(body)) return new Response(JSON.stringify(fail(null, -32600, "Batches are not supported: send one message per request")), { status: 400, headers: CORS });
   let answer: unknown;
   try {
-    answer = await handle(body);
+    answer = await handle(body, caller);
   } catch (err) {
     answer = fail((body as Rpc)?.id ?? null, -32603, err instanceof Error ? err.message.slice(0, 200) : "Internal error");
   }

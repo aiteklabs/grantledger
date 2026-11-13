@@ -222,7 +222,11 @@ export interface MatchSummary {
   common_gap: string | null;
 }
 
-export async function matchGrants(db: D1Database, form: ProfileForm, limit = 40): Promise<{ results: MatchResult[]; summary: MatchSummary }> {
+// Calls a screening page shows and stores.
+export const SCREEN_LIMIT = 40;
+
+// alsoSince: also screen every call first seen after that instant (the Radar's question is "what is new").
+export async function matchGrants(db: D1Database, form: ProfileForm, limit = SCREEN_LIMIT, alsoSince?: string): Promise<{ results: MatchResult[]; summary: MatchSummary }> {
   // "EU" as origin means anywhere in Europe: the pool is every European country in the ledger plus EU-wide calls.
   const countries = form.country === "EU" ? [...EUROPE] : [...new Set([form.country, "EU"])];
   const ph = countries.map(() => "?").join(",");
@@ -265,6 +269,17 @@ export async function matchGrants(db: D1Database, form: ProfileForm, limit = 40)
     .bind(nowIso, ...poolCountries)
     .all<EnrichedRow>();
   for (const r of pool.results) if (!rows.has(r.id)) rows.set(r.id, r);
+  // The pool above is capped and ordered by deadline, so in a large country (Spain holds more current calls than the
+  // cap, most without a deadline) a new call can fall outside it. The newest calls enter whatever their deadline.
+  if (alsoSince) {
+    const fresh = await db
+      .prepare(`${SELECT} FROM grants g LEFT JOIN grant_enrichments e ON e.grant_id = g.id AND e.content_hash = g.content_hash
+        WHERE g.status IN ('open','forthcoming') AND (g.closes_at IS NULL OR g.closes_at >= ?) AND g.country IN (${poolPh}) AND g.first_seen_at > ?
+        ORDER BY g.first_seen_at DESC LIMIT 1500`)
+      .bind(nowIso, ...poolCountries, alsoSince)
+      .all<EnrichedRow>();
+    for (const r of fresh.results) if (!rows.has(r.id)) rows.set(r.id, r);
+  }
   // A keyword that tags a large share of the pool through the calls' theme classification is broad too.
   const themeCounts = new Map<string, number>();
   for (const r of rows.values()) {

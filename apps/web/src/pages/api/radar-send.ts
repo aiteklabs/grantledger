@@ -9,5 +9,6 @@ export const prerender = false;
 export const POST: APIRoute = async ({ request }) => {
   if (!(await isAdmin(request, env))) return unauthorized(env);
   const result = await sendDueRadars(env.DB, env);
+  if (result.errors.length) console.error("radar errors", result.errors);
   return new Response(JSON.stringify(result, null, 2), { headers: { "content-type": "application/json" } });
 };

@@ -95,6 +95,15 @@
             "description": "Source feed id, as listed on /coverage."
           },
           {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Only calls first seen in the ledger on or after this date (YYYY-MM-DD)."
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
