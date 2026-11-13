@@ -34,8 +34,9 @@ export async function screenProfile(db: D1Database, opts: ScreenOpts): Promise<v
       : db.prepare("INSERT INTO fit_checks (id, created_at, input_type, form, summary, contact_email, status, mode, duration_ms, ip_hash, user_agent, finished_at) VALUES (?, ?, 'form', ?, ?, ?, 'done', 'sql', ?, ?, ?, ?)").bind(
           id, now, JSON.stringify(profile), JSON.stringify(summary), opts.email, Date.now() - opts.started, opts.ip_hash, opts.user_agent.slice(0, 300), now,
         ),
-    // Saved profiles follow the form they were saved from, whether it was re-run or edited and screened again.
-    db.prepare("UPDATE radars SET form = ?, company_name = ? WHERE fit_check_id = ? AND active = 1").bind(JSON.stringify(profile), profile.company_name || null, id),
+    // The owner's saved profiles follow the form they were saved from, whether it was re-run or edited and screened
+    // again. A profile another account saved from the same link keeps the form it was saved with.
+    db.prepare("UPDATE radars SET form = ?, company_name = ? WHERE fit_check_id = ? AND active = 1 AND email = (SELECT contact_email FROM fit_checks WHERE id = ?)").bind(JSON.stringify(profile), profile.company_name || null, id, id),
     db.prepare("DELETE FROM fit_matches WHERE fit_check_id = ?").bind(id),
     ...results.map((m, i) =>
       db.prepare("INSERT INTO fit_matches (fit_check_id, grant_id, rank, verdict, score, reasons, missing, gaps, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
