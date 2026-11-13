@@ -22,7 +22,7 @@ accept the attestations.
 - Domain verification: paste the portal token into `OPENAI_APPS_CHALLENGE` in `apps/web/wrangler.jsonc`, then
   `pnpm build && pnpm exec wrangler deploy`; the token is served at
   `https://grantledger.eu/.well-known/openai-apps-challenge`.
-- Tools: `search_grants`, `get_grant`, `get_fit`, `search`, `fetch`. All read only, `openWorldHint: false`.
+- Tools: `search_grants`, `get_grant`, `get_fit`, `my_profiles` (since 2026-11-13), `search`, `fetch`. All read only, `openWorldHint: false`.
 
 ## Test account (Review details)
 

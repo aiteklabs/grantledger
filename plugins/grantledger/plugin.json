@@ -25,13 +25,14 @@
       "interface": {
         "displayName": "GrantLedger",
         "shortDescription": "Public funding across Europe",
-        "longDescription": "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits published by official bodies in 21 European countries and EU-wide programmes, collected every night from official sources and searchable in any language, for startups and SMEs, artists, researchers, non-profits and public bodies. Ask which calls fund an industrial SME in Spain, which arts funds accept an independent musician, or which research programmes fit a lab in Austria; every answer links the official publisher page, and the assistant explains the conditions of a call in plain words. Pro accounts can paste the link of their GrantLedger screening result: the assistant reads the profile they confirmed and every call screened for it with the rule each verdict relies on, then ranks, explains gaps and compares calls. Verdicts come from fixed rules on grantledger.eu, never from the model. Sign in with your GrantLedger Pro account when ChatGPT asks. Read only: the plugin cannot change your profiles or your account.",
+        "longDescription": "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits published by official bodies in 21 European countries and EU-wide programmes, collected every night from official sources and searchable in any language, for startups and SMEs, artists, researchers, non-profits and public bodies. Ask which calls fund an industrial SME in Spain, which arts funds accept an independent musician, or which research programmes fit a lab in Austria; every answer links the official publisher page, and the assistant explains the conditions of a call in plain words. Pro accounts can ask what fits them or what is new for them: the assistant reads the profiles they saved, the calls their weekly Radar email already sent and every call screened for each profile with the rule each verdict relies on, then ranks, explains gaps and compares calls. A screening link pasted in the chat works too. Verdicts come from fixed rules on grantledger.eu, never from the model. Sign in with your GrantLedger Pro account when ChatGPT asks. Read only: the plugin cannot change your profiles or your account.",
         "developerName": "Aitek Labs",
         "category": "Finance",
         "capabilities": [
           "Search public funding calls across Europe by text, country, status and type",
           "Read the full record of a call with the official publisher link",
-          "Read a GrantLedger screening result from its link and explain each verdict",
+          "Read your saved profiles and the calls your weekly Radar email sent",
+          "Read a GrantLedger screening result and explain each verdict",
           "Rank, compare and explain calls for a company, an organisation or an individual"
         ],
         "websiteURL": "https://grantledger.eu/assistant",
