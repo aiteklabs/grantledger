@@ -6,7 +6,7 @@ import { JSON_HEADERS, callerFromKey, grantJson, keyRequired, parseSearch, prefl
 export const prerender = false;
 
 // GET /api/grants.json: the public ledger as JSON, same filters as /grants (q, country, status, type, beneficiary,
-// source, sort, page, per). Pro key required (bearer or ?key=); 60 requests per minute per client.
+// source, sort, page, per) plus since. Pro key required (bearer or ?key=); 60 requests per minute per client.
 export const GET: APIRoute = async ({ request, url }) => {
   const limited = await rateLimited(request, env);
   if (limited) return limited;

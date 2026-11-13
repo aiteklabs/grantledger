@@ -60,6 +60,7 @@ export function parseSearch(input: Record<string, unknown>): SearchParams {
   const q = str("q") || str("query");
   const status = str("status");
   const sort = str("sort");
+  const since = str("since");
   const page = Number(input.page ?? 1) || 1;
   const per = Number(input.per ?? input.limit ?? 20) || 20;
   return {
@@ -69,6 +70,7 @@ export function parseSearch(input: Record<string, unknown>): SearchParams {
     type: str("type"),
     beneficiary: str("beneficiary"),
     source: str("source"),
+    since: /^\d{4}-\d{2}-\d{2}$/.test(since) ? since : "",
     sort: (SORTS.has(sort) ? sort : q ? "relevance" : "deadline") as SearchParams["sort"],
     page: Math.max(1, Math.floor(page)),
     pageSize: Math.min(100, Math.max(5, Math.floor(per))),
@@ -115,6 +117,7 @@ export async function fitJson(db: D1Database, id: string) {
   return {
     id,
     created_at: check.created_at,
+    screened_at: check.finished_at,
     form: parseJson(check.form, null),
     summary: parseJson(check.summary, null),
     matches: matches.map((m) => ({

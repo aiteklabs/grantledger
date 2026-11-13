@@ -12,11 +12,13 @@ export interface ScreenOpts {
   ip_hash: string | null;
   user_agent: string;
   started: number;
+  // A screening the caller already ran (the weekly Radar), stored as is instead of screening again.
+  matched?: Awaited<ReturnType<typeof matchGrants>>;
 }
 
 export async function screenProfile(db: D1Database, opts: ScreenOpts): Promise<void> {
   const { id, profile } = opts;
-  const { results, summary } = await matchGrants(db, profile);
+  const { results, summary } = opts.matched ?? (await matchGrants(db, profile));
   const now = new Date().toISOString();
   // Gaps for fits and eligible calls; a memo (why not, cost, alternatives) for the rest. Alternatives cost one query each, so cap them.
   const extras = await Promise.all(
@@ -32,6 +34,8 @@ export async function screenProfile(db: D1Database, opts: ScreenOpts): Promise<v
       : db.prepare("INSERT INTO fit_checks (id, created_at, input_type, form, summary, contact_email, status, mode, duration_ms, ip_hash, user_agent, finished_at) VALUES (?, ?, 'form', ?, ?, ?, 'done', 'sql', ?, ?, ?, ?)").bind(
           id, now, JSON.stringify(profile), JSON.stringify(summary), opts.email, Date.now() - opts.started, opts.ip_hash, opts.user_agent.slice(0, 300), now,
         ),
+    // Saved profiles follow the form they were saved from, whether it was re-run or edited and screened again.
+    db.prepare("UPDATE radars SET form = ?, company_name = ? WHERE fit_check_id = ? AND active = 1").bind(JSON.stringify(profile), profile.company_name || null, id),
     db.prepare("DELETE FROM fit_matches WHERE fit_check_id = ?").bind(id),
     ...results.map((m, i) =>
       db.prepare("INSERT INTO fit_matches (fit_check_id, grant_id, rank, verdict, score, reasons, missing, gaps, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(

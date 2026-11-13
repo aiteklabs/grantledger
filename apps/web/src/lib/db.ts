@@ -69,6 +69,8 @@ export interface SearchParams {
   type?: string;
   beneficiary?: string;
   source?: string;
+  // ISO date: only calls first seen in the ledger on or after it.
+  since?: string;
   sort?: "deadline" | "recent" | "relevance";
   page?: number;
   pageSize?: number;
@@ -150,6 +152,10 @@ async function querySearchGrants(db: D1Database, p: SearchParams): Promise<{ ite
   if (p.source) {
     where.push("g.source = ?");
     binds.push(p.source);
+  }
+  if (p.since) {
+    where.push("g.first_seen_at >= ?");
+    binds.push(p.since);
   }
   if (p.type) {
     where.push("g.funding_types LIKE ?");
@@ -304,7 +310,7 @@ export async function getProStats(db: D1Database): Promise<ProStats> {
         (SELECT COUNT(*) FROM radars r WHERE r.email = a.email AND r.active = 1) AS profiles,
         (SELECT GROUP_CONCAT(COALESCE(company_name, 'Unnamed') || '|' || fit_check_id, ';') FROM radars r WHERE r.email = a.email AND r.active = 1) AS companies
       FROM accounts a WHERE a.paid_at IS NOT NULL ORDER BY a.paid_at DESC`),
-    db.prepare("SELECT COUNT(*) AS n, SUM(CASE WHEN last_sent_at > created_at THEN 1 ELSE 0 END) AS sent FROM radars WHERE active = 1"),
+    db.prepare("SELECT COUNT(*) AS n, (SELECT COUNT(DISTINCT s.radar_id) FROM radar_sent s JOIN radars r ON r.id = s.radar_id WHERE r.active = 1) AS sent FROM radars WHERE active = 1"),
     db.prepare("SELECT form FROM radars WHERE active = 1 UNION ALL SELECT form FROM fit_checks WHERE form IS NOT NULL AND created_at >= ?").bind(since),
   ]);
   const rows = accounts.results as ProStats["accounts"];

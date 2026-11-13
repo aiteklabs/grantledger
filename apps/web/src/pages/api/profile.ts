@@ -18,7 +18,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   }
   if (action === "remove") {
     const id = String(form.get("id") ?? "");
-    if (/^[0-9a-f]{36}$/.test(id)) await removeProfile(env.DB, account.email, id);
+    // 36 hex; the oldest profiles carry 24.
+    if (/^[0-9a-f]{24,36}$/.test(id)) await removeProfile(env.DB, account.email, id);
     return redirect("/me", 303);
   }
   return new Response("Bad request", { status: 400 });
