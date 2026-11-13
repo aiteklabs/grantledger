@@ -13,7 +13,7 @@ const post = Astro.request.method === "POST";
 const ok = post && valid ? (await env.DB.prepare("UPDATE radars SET active = 0 WHERE id = ?").bind(id).run()).meta.changes > 0 : false;
 const ask = !post && valid && !!(await env.DB.prepare("SELECT 1 FROM radars WHERE id = ? AND active = 1").bind(id).first());
 ---
-<Base title="Radar stopped" noindex={true}>
+<Base title={ask ? "Stop this Radar?" : "Radar stopped"} noindex={true}>
   <div class="wrap" style="padding-top:3rem;max-width:720px">
     <span class="kicker">Radar</span>
     {ask ? (

@@ -19,7 +19,22 @@ export default {
     // runtime may hand it back in another spelling.
     if (controller.cron.startsWith("0 6 ")) {
       if (!env.WEB_URL || !env.ADMIN_TOKEN) return;
-      ctx.waitUntil(fetch(`${env.WEB_URL}/api/radar-send`, { method: "POST", headers: { authorization: `Bearer ${env.ADMIN_TOKEN}`, "content-type": "application/json" } }));
+      ctx.waitUntil(
+        (async () => {
+          // The site handles a page of profiles per call and names the profile to continue from.
+          let after = "";
+          for (let i = 0; i < 200; i++) {
+            const res = await fetch(`${env.WEB_URL}/api/radar-send?after=${after}`, { method: "POST", headers: { authorization: `Bearer ${env.ADMIN_TOKEN}`, "content-type": "application/json" } });
+            if (!res.ok) {
+              console.error(`radar-send answered ${res.status} after "${after}"`);
+              break;
+            }
+            const out = (await res.json().catch(() => ({}))) as { next?: string | null };
+            if (!out.next) break;
+            after = out.next;
+          }
+        })(),
+      );
       return;
     }
     if (controller.cron === "0 5 * * *") {

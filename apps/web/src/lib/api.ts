@@ -70,7 +70,8 @@ export function parseSearch(input: Record<string, unknown>): SearchParams {
     type: str("type"),
     beneficiary: str("beneficiary"),
     source: str("source"),
-    since: /^\d{4}-\d{2}-\d{2}$/.test(since) ? since : "",
+    // A date, or a timestamp as the API returns them: the day counts.
+    since: /^\d{4}-\d{2}-\d{2}/.test(since) ? since.slice(0, 10) : "",
     sort: (SORTS.has(sort) ? sort : q ? "relevance" : "deadline") as SearchParams["sort"],
     page: Math.max(1, Math.floor(page)),
     pageSize: Math.min(100, Math.max(5, Math.floor(per))),

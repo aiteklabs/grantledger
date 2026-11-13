@@ -38,7 +38,7 @@ const saved = Astro.url.searchParams.get("saved") === "1";
             <tr>
               <td><a href={`/fit/${p.fit_check_id}`}>{p.company_name || "?"}</a></td>
               <td class="mono small">{fmtDate(p.created_at)}</td>
-              <td class="mono small">{p.last_sent_at && p.last_sent_at !== p.created_at ? fmtDate(p.last_sent_at) : d.me_not_yet}</td>
+              <td class="mono small">{p.last_email_at ? fmtDate(p.last_email_at) : d.me_not_yet}</td>
               <td style="white-space:nowrap">
                 <form method="post" action="/api/rescreen" style="display:inline"><input type="hidden" name="id" value={p.fit_check_id} /><button class="btn ghost" type="submit" style="padding:0.3rem 0.7rem;font-size:0.85rem">{d.me_rerun}</button></form>
                 <form method="post" action="/api/profile" style="display:inline;margin-left:0.4rem"><input type="hidden" name="action" value="remove" /><input type="hidden" name="id" value={p.id} /><button class="btn ghost" type="submit" style="padding:0.3rem 0.7rem;font-size:0.85rem">{d.me_remove}</button></form>

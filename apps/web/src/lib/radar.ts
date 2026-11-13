@@ -17,12 +17,14 @@ export interface RadarRow {
   created_at: string;
   last_sent_at: string | null;
   active: number;
+  // Only from listProfiles: when the Radar last emailed this profile, from the send log.
+  last_email_at?: string | null;
 }
 
 type Mail = Pick<Cloudflare.Env, "EMAIL" | "MAIL_FROM" | "SITE_URL">;
 
 export async function listProfiles(db: D1Database, email: string): Promise<RadarRow[]> {
-  return (await db.prepare("SELECT * FROM radars WHERE email = ? AND active = 1 ORDER BY created_at").bind(email).all<RadarRow>()).results;
+  return (await db.prepare("SELECT r.*, (SELECT MAX(s.sent_at) FROM radar_sent s WHERE s.radar_id = r.id) AS last_email_at FROM radars r WHERE r.email = ? AND r.active = 1 ORDER BY r.created_at").bind(email).all<RadarRow>()).results;
 }
 
 // Saves a finished screening as one of the account's profiles. Returns the profile id, "full" at the limit, or null
@@ -72,7 +74,7 @@ type Line = { text: string; html: string };
 
 function grantLine(env: Mail, m: MatchResult): Line {
   const g = m.grant;
-  const url = `${env.SITE_URL}/grants/${g.id}`;
+  const url = `${env.SITE_URL}/grants/${encodeURI(g.id)}`;
   const deadline = g.closes_at ? `deadline ${fmtDate(g.closes_at)}` : "no deadline";
   const who = [g.funder_name, g.country].filter(Boolean).join(", ");
   const reason = why(m);
@@ -109,9 +111,11 @@ export async function sentCalls(db: D1Database, radarId: string, limit = EMAIL_M
 }
 
 // Weekly: for every active profile, screen it, email the calls that pass and were never sent to it, log them, and
-// store the screening so the profile's page and the assistants read this week's ledger.
-export async function sendDueRadars(db: D1Database, env: Mail, limit = 500): Promise<{ radars: number; sent: number; errors: string[] }> {
-  const rows = (await db.prepare("SELECT * FROM radars WHERE active = 1 ORDER BY last_sent_at ASC LIMIT ?").bind(limit).all<RadarRow>()).results;
+// store the screening so the profile's page and the assistants read this week's ledger. One call handles a page of
+// profiles after the given id and returns the id to continue from: a profile costs up to sixty queries, and a Worker
+// invocation has a fixed budget of them.
+export async function sendDueRadars(db: D1Database, env: Mail, after = "", limit = 10): Promise<{ radars: number; sent: number; errors: string[]; next: string | null }> {
+  const rows = (await db.prepare("SELECT * FROM radars WHERE active = 1 AND id > ? ORDER BY id LIMIT ?").bind(after, limit).all<RadarRow>()).results;
   let sent = 0;
   const errors: string[] = [];
   for (const radar of rows) {
@@ -161,6 +165,10 @@ export async function sendDueRadars(db: D1Database, env: Mail, limit = 500): Pro
         ),
         db.prepare("UPDATE radars SET last_sent_at = ? WHERE id = ?").bind(now, radar.id),
       ]);
+      // Stored only for the profile of the screening's owner: another account that saved the same link keeps its
+      // own copy of the form and must not write it back over the owner's.
+      const owner = await db.prepare("SELECT contact_email FROM fit_checks WHERE id = ?").bind(radar.fit_check_id).first<{ contact_email: string | null }>();
+      if (owner?.contact_email !== radar.email) continue;
       await screenProfile(db, {
         id: radar.fit_check_id,
         profile: parsed.data,
@@ -175,5 +183,5 @@ export async function sendDueRadars(db: D1Database, env: Mail, limit = 500): Pro
       errors.push(`${radar.id}: ${err instanceof Error ? err.message : String(err)}`.slice(0, 200));
     }
   }
-  return { radars: rows.length, sent, errors };
+  return { radars: rows.length, sent, errors, next: rows.length === limit ? rows[rows.length - 1]!.id : null };
 }
