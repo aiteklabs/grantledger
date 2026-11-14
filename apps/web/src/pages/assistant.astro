@@ -30,7 +30,7 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <pre class="callout mono" style="margin:1rem 0"><code>{mcpUrl}</code></pre>
     {flag === "disconnected" && <p class="callout" style="border-left-color:var(--moss)">Every assistant is disconnected. Each one asks you to sign in again on its next use.</p>}
     {!account && <p><a class="btn" href="/pro">Get Pro</a> <span class="small muted" style="margin-left:0.8rem">One payment, no subscription. No account yet? The sign-in page offers Pro too, and brings you back once paid.</span></p>}
-    <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, <span class="mono">my_profiles</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT, all read only, and <span class="mono">save_profile</span>. Sixty requests per minute.</p>
+    <p class="small muted">Tools: <span class="mono">search_grants</span>, <span class="mono">get_grant</span>, <span class="mono">get_fit</span>, <span class="mono">my_profiles</span>, plus <span class="mono">search</span> and <span class="mono">fetch</span> for ChatGPT, all read only, and <span class="mono">screen_profile</span> and <span class="mono">save_profile</span>. Sixty requests per minute.</p>
 
     <h3 id="chatgpt">ChatGPT</h3>
     <p><a class="btn" href={CHATGPT_PLUGIN_URL} target="_blank" rel="noopener">Open GrantLedger in ChatGPT</a></p>
@@ -54,9 +54,10 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <pre class="callout mono" style="margin:1rem 0"><code>{site}/fit/&lt;id&gt;</code></pre>
     <p>The assistant calls <span class="mono">get_fit</span> and receives the profile you confirmed and every call screened for it with the rule each verdict relies on. Then ask it to rank, explain a gap, draft a first email to the funder, or compare two calls.</p>
     <p>Once you have saved a profile, no link is needed: ask "what is new for my profile?" and the assistant reads your saved profiles and the calls the Radar emailed you through <span class="mono">my_profiles</span>.</p>
-    <h2>Save a profile from the chat</h2>
-    <p>No profile yet, or a second project to follow? Describe it in the chat and ask the assistant to save it: "Save a profile for my company and alert me about new calls." It asks what it does not know, shows you the complete profile and saves it through <span class="mono">save_profile</span> only after your yes. The profile is screened at once and again every Monday, and new calls that fit are emailed to you, as if you had saved it on this site.</p>
-    <p class="small muted">Connected before this existed? That connection stays read only: disconnect GrantLedger in your assistant and connect it again. The personal link below never saves. Change or remove a profile on <a href="/me">your page</a>.</p>
+    <h2 id="projects">Screen and save from the chat</h2>
+    <p><b>Screen any project.</b> Describe your company or a project and ask: "Screen this project against the ledger." The assistant asks what it does not know and runs the same screening as this site through <span class="mono">screen_profile</span>: every call with its verdict and the rule behind it. Screen as many projects as you like, a second product, a what-if, a client; the limit is twenty screenings a day. A screening is a snapshot of that day's ledger: ask again later for a fresh one.</p>
+    <p><b>Save the ones to follow.</b> Ask: "Save this profile and alert me about new calls." The assistant shows you the complete profile and saves it through <span class="mono">save_profile</span> only after your yes. A saved profile is screened again every Monday and new calls that fit are emailed to you, as if you had saved it on this site. Your plan sets how many profiles you can save; screening has no such limit.</p>
+    <p class="small muted">Connected before this existed? That connection stays read only: disconnect GrantLedger in your assistant and connect it again. The personal link below neither screens nor saves. Change or remove a profile on <a href="/me">your page</a>.</p>
     {account && profiles.length > 0 && (
       <p class="callout" style="border-left-color:var(--moss)">Your links: {profiles.map((p, i) => <><span class="mono">{site}/fit/{p.fit_check_id}</span>{i < profiles.length - 1 ? " · " : ""}</>)}</p>
     )}
@@ -95,8 +96,8 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <ul>
       <li>Verdicts come from fixed rules on this site, never from the assistant. It reads them; it does not decide them.</li>
       <li>The ledger holds what official sources publish. If a call is not in the results, it is not in the ledger; ask the assistant to say so rather than guess.</li>
-      <li>An assistant reads, and saves a profile only when you ask and confirm it. It cannot change or remove a saved profile, your account or your payment.</li>
-      <li>The connector sends nothing to us except the queries, the ids it looks up and the profile you ask it to save. See the <a href="/privacy">privacy notice</a>.</li>
+      <li>An assistant reads, screens what you describe, and saves a profile only when you ask and confirm it. It cannot change or remove a saved profile, your account or your payment.</li>
+      <li>The connector sends nothing to us except the queries, the ids it looks up and the profile you ask it to screen or save. See the <a href="/privacy">privacy notice</a>.</li>
     </ul>
 
     <h2>Questions that work well</h2>

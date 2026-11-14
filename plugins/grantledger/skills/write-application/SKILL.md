@@ -9,7 +9,7 @@ The user wants a first draft they can edit and submit themselves. You write from
 
 ## Steps
 
-1. Identify the call and the profile. Call `my_profiles`, then `get_fit` for the profile, then `get_grant` for the call. If the account has no saved profile, ask for a grantledger.eu/fit/<id> link or offer to save one with `save_profile`.
+1. Identify the call and the profile. Call `my_profiles`, then `get_fit` for the profile, then `get_grant` for the call. If the account has no saved profile, ask for a grantledger.eu/fit/<id> link or offer to screen the project with `screen_profile`.
 2. Check the verdict. If the screening says `no` or `not_yet` for this call, say so first with the rule it relies on, and name the alternatives from the memo. Verdicts come from fixed rules on grantledger.eu; do not overrule them. Write only if the user still wants it.
 3. Read what the call asks for. The application form, the template and the evaluation criteria are on the official publisher page (`source_url`) or in the files under `documents`. Open them with your web or file tools. If you cannot open them, ask the user to paste or upload the form or the template.
 4. Show the outline before writing: every section the form asks for, in its order, with its length limit and the criterion it answers. Ask the user to confirm it.
