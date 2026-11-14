@@ -1,0 +1,62 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="bmkb-borgstellingskrediet-explained">
+  <p class="lead">The BMKB (Borgstelling MKB-kredieten, often called borgstellingskrediet) is a Dutch state guarantee on part of a business loan, for an SME that cannot offer its financier enough collateral. You do not apply to the government: your bank or another accredited financier applies it for you, together with the loan. The scheme is open until 1 July 2027.</p>
+
+  <h2>Who can use it</h2>
+  <ul>
+    <li>A business with at most 250 employees (FTE) and a yearly turnover up to 50 million euros or a balance sheet total up to 43 million euros.</li>
+    <li>Established in the Netherlands, or on Bonaire, Sint Eustatius or Saba, with most of its activity there.</li>
+    <li>Companies, general partnerships (VOF), sole proprietorships and professional partnerships (maatschap).</li>
+    <li>Starters count too. A starter is a business run for less than three years.</li>
+  </ul>
+  <p><b>Excluded:</b> publicly insured healthcare, and businesses that earn more than half of their turnover from agriculture, horticulture, livestock, fishing or feed production, from banking, insurance or financing other companies, or from buying, developing or managing real estate. A building that is both home and workplace needs at least half business use.</p>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Maximum BMKB credit</td><td>1.5 million euros, raised from 1 million "for now"</td></tr>
+      <tr><td>Share financed with BMKB</td><td>Up to three quarters of a credit need of up to 333,333 euros; at most half above that</td></tr>
+      <tr><td>Starters</td><td>The state guarantees 67.5 percent of a starter loan of up to 333,333 euros</td></tr>
+      <tr><td>Innovative businesses</td><td>The state guarantees 60 percent of a loan of up to 1.5 million euros</td></tr>
+      <tr><td>Term of the guarantee</td><td>Up to 6 years from the first repayment; up to 12 years for a building or a ship</td></tr>
+      <tr><td>One-off guarantee fee</td><td>3.90 percent for a term up to 8 quarters, 4.25 percent for 9 to 24 quarters, 5.85 percent for 25 to 48 quarters</td></tr>
+      <tr><td>Fee for innovative credit</td><td>5.55, 6.10 and 8.35 percent for the same terms</td></tr>
+      <tr><td>State aid</td><td>Granted under <a href="/blog/de-minimis-aid-explained">de minimis</a> rules</td></tr>
+      <tr><td>Open</td><td>Since 1 January 2023, until 1 July 2027</td></tr>
+    </tbody>
+  </table>
+  <p>The fee is calculated on the guaranteed credit and paid once. The financier owes it to RVO, the agency that runs the scheme for the Ministry of Economic Affairs, and passes it on to you. It comes on top of the interest your financier charges.</p>
+
+  <h2>BMKB-Groen, for sustainability investments</h2>
+  <p>For investments that make the business more sustainable, the guaranteed share rises from 50 to 75 percent of the credit and the term can run to 12 years. The fee is lower: 2 percent up to 24 quarters, 3 percent from 25 to 48 quarters. It covers equipment on the Dutch energy investment list, other energy-saving assets, and bringing business premises to at least energy label C. It is open until 1 July 2027 and gives no right to the separate energy investment allowance.</p>
+
+  <h2>How to get it</h2>
+  <ol>
+    <li>Ask your financier for a loan and say you want the BMKB applied. The guarantee is requested together with the loan, never on its own.</li>
+    <li>The financier decides whether to lend, and registers the guarantee with RVO once the loan is signed.</li>
+    <li>Compare offers. Banks listed by RVO include ABN AMRO, ING, Rabobank and Triodos Bank; accredited non-bank lenders include Qredits, Geldvoorelkaar, FundIQ and AltFin. RVO's list changes, so check it before you choose.</li>
+  </ol>
+
+  <h2>Points to check with your financier</h2>
+  <ul>
+    <li><b>When repayment starts.</b> RVO's application page says no later than 6 months after signing; its conditions page gives 12 months for starters and later for innovation loans.</li>
+    <li><b>Your de minimis room.</b> The guarantee uses part of your <a href="/blog/de-minimis-aid-explained">300,000 euro ceiling</a>.</li>
+    <li><b>The total cost.</b> Interest plus the one-off fee, against a loan without the guarantee if you could get one.</li>
+  </ul>
+
+  <LiveCalls heading="Dutch guarantee and credit schemes in the ledger" q="borgstelling" country="NL" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>RVO, BMKB (Dutch main page, checked by RVO on 26 July 2026): purpose, maximum credit, shares, dates. <a href="https://www.rvo.nl/subsidies-financiering/bmkb" rel="noopener">rvo.nl</a></li>
+    <li>RVO, BMKB (English page, checked on 25 September 2026): size limits, exclusions, financiers. <a href="https://english.rvo.nl/subsidies-financing/bmkb" rel="noopener">english.rvo.nl</a></li>
+    <li>RVO, BMKB conditions (checked on 25 September 2026): starters, innovation, terms. <a href="https://www.rvo.nl/subsidies-financiering/bmkb/voorwaarden" rel="noopener">rvo.nl</a></li>
+    <li>RVO, BMKB-Groen (checked on 2 July 2026). <a href="https://www.rvo.nl/subsidies-financiering/bmkb/bmkb-groen" rel="noopener">rvo.nl</a></li>
+    <li>RVO, application information: guarantee fee table. <a href="https://www.rvo.nl/node/4608" rel="noopener">rvo.nl</a></li>
+  </ul>
+</Article>

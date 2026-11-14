@@ -1,0 +1,54 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="de-minimis-aid-explained">
+  <p class="lead">De minimis aid is public support small enough that the EU exempts it from state aid control. Since 1 January 2024 a company can receive up to 300,000 euros of it over three years, from all funders in one member state together. The rule applies until 31 December 2030.</p>
+
+  <h2>Why you meet it</h2>
+  <p>A government that helps a company normally needs the European Commission's approval, or a recognised exemption. De minimis is the simplest exemption: the amounts are deemed too small to affect competition, so a ministry, an agency or a region can grant them quickly. Many national grants, vouchers, subsidised loans and guarantees are granted this way. The Dutch <a href="/blog/bmkb-borgstellingskrediet-explained">BMKB credit guarantee</a> is one example: its official page states that de minimis rules apply.</p>
+  <p>When a call says "granted under de minimis", the money is real, but it uses part of your ceiling.</p>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>General ceiling</td><td>300,000 euros per company over three years</td></tr>
+      <tr><td>Before 2024</td><td>200,000 euros, in force since 2008</td></tr>
+      <tr><td>In force</td><td>From 1 January 2024 until 31 December 2030</td></tr>
+      <tr><td>Legal text</td><td>Commission Regulation (EU) 2023/2831 of 13 December 2023</td></tr>
+      <tr><td>Services of general economic interest</td><td>Separate regulation, 750,000 euros over three years (was 500,000)</td></tr>
+      <tr><td>Central register</td><td>Member states must record de minimis aid in a central register from 1 January 2026</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What counts toward the ceiling</h2>
+  <ul>
+    <li><b>Every de minimis aid, from every public body.</b> A regional voucher, a national grant and a guarantee from a state bank add up.</li>
+    <li><b>The group, not the legal entity.</b> The regulation counts a "single undertaking": companies linked by control are added together. A subsidiary does not get a fresh ceiling.</li>
+    <li><b>The aid inside a loan or a guarantee, not its face value.</b> For these the regulation counts the "gross grant equivalent", the advantage compared with market terms. The 2023 revision added safe harbours that make this easier for loans and guarantees given through financial intermediaries.</li>
+    <li><b>Three years, rolling.</b> What matters is the aid granted in the three years up to the new grant, not a calendar year.</li>
+  </ul>
+  <p>Aid approved under another route, for example a scheme under the General Block Exemption Regulation or a programme managed directly by the European Commission such as Horizon Europe, is not de minimis aid.</p>
+
+  <h2>What a funder will ask you</h2>
+  <ol>
+    <li>A declaration of the de minimis aid your company, and the companies linked to it, received in the last three years.</li>
+    <li>The amount, the date and the granting body of each one. Keep the award letters: each states that the aid is de minimis and its amount.</li>
+    <li>If the new aid would take you over the ceiling, it cannot be granted under de minimis, even in part.</li>
+  </ol>
+  <p>The Commission says the central register, mandatory from 1 January 2026, means companies no longer have to track the ceiling themselves. Until you can check the register of your country, keep your own list.</p>
+
+  <h2>Sectors with their own rules</h2>
+  <p>Primary agricultural production and fisheries and aquaculture have their own de minimis regulations, with lower ceilings. If you work in one of them, read the regulation for your sector or ask the funder which ceiling applies.</p>
+
+  <LiveCalls heading="Calls in the ledger that mention de minimis" q="de minimis" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>European Commission, press release IP/23/6567 of 13 December 2023: ceilings, dates, central register, safe harbours. <a href="https://ec.europa.eu/commission/presscorner/detail/en/ip_23_6567" rel="noopener">ec.europa.eu</a></li>
+    <li>European Commission, competition policy, state aid regulations: the regulation in force and the one it replaced. <a href="https://competition-policy.ec.europa.eu/state-aid/legislation/regulations_en" rel="noopener">competition-policy.ec.europa.eu</a></li>
+    <li>Commission Regulation (EU) 2023/2831, Articles 2 to 4: single undertaking, ceiling, gross grant equivalent. <a href="https://eur-lex.europa.eu/eli/reg/2023/2831/oj" rel="noopener">eur-lex.europa.eu</a></li>
+  </ul>
+</Article>

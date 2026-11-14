@@ -1,0 +1,32 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { POSTS, postPath } from "~/lib/blog";
+import { fmtDate } from "~/lib/format";
+export const prerender = false;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  name: "GrantLedger guides",
+  url: `${env.SITE_URL}/blog`,
+  blogPost: POSTS.map((p) => ({ "@type": "BlogPosting", headline: p.title, url: env.SITE_URL + postPath(p), datePublished: p.published })),
+};
+---
+<Base title="Guides to public funding in Europe" description="Plain-English guides to public funding in Europe: how to find grants across borders, EU rules such as de minimis, and national schemes explained." jsonLd={jsonLd}>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">Guides</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">Guides to public funding in Europe</h1>
+    <p class="lead">Public funding is published country by country, in the language of each country. These guides explain the method, the EU rules and the national schemes people search for most, in plain English, from the official sources, with the calls that are open today.</p>
+    <ul class="ledger" style="margin-top:2rem">
+      {POSTS.map((p) => (
+        <li style="padding:1.1rem 0">
+          <span class="kicker">{p.kicker} · {fmtDate(p.published)}</span>
+          <h2 style="font-size:1.4rem;margin:0.3rem 0"><a href={postPath(p)}>{p.title}</a></h2>
+          <p style="margin:0">{p.description}</p>
+        </li>
+      ))}
+    </ul>
+    <p style="margin-top:2rem"><a class="btn" href="/grants">Search the ledger</a> <a class="btn ghost" href="/countries" style="margin-left:0.6rem">Browse by country</a></p>
+  </div>
+</Base>
