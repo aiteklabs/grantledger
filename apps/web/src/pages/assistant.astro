@@ -58,6 +58,15 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
       <p class="callout" style="border-left-color:var(--moss)">Your links: {profiles.map((p, i) => <><span class="mono">{site}/fit/{p.fit_check_id}</span>{i < profiles.length - 1 ? " · " : ""}</>)}</p>
     )}
 
+    <h2>Plan, write and score an application</h2>
+    <p>The assistant you already pay for does the writing; the ledger gives it your profile, the call and the readiness gaps. Pick a call from your screening and paste one of these:</p>
+    <ul>
+      <li>"Plan my application to this call from the readiness gaps in my screening, counted back from the deadline. Say if the deadline is realistic."</li>
+      <li>"Write a first draft of my application to this call. Read the form and the criteria on the official page, show me the outline first, and put a placeholder where you miss a fact."</li>
+      <li>"Score my draft against the evaluation criteria published for this call, criterion by criterion, and give me the three changes that gain the most points."</li>
+    </ul>
+    <p class="small muted">The assistant reads the form and the criteria on the publisher's page; if it cannot open them, paste or upload the call text. A score is the assistant's reading of the published criteria, not the funder's evaluation and not a verdict of this site. Your draft stays in the chat: the connector only looks up queries and ids. Check the funder's rules on AI tools in applications.</p>
+
     {account && (
       <>
         <h2>Disconnect</h2>
