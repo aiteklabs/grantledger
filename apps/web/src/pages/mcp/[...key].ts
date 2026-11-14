@@ -28,6 +28,8 @@ const INSTRUCTIONS =
   "it returns their company profile and the calls screened for it with the rule each verdict relies on. Verdicts are deterministic rules, not model output. " +
   "Use screen_profile to screen a company or a project the user describes without saving it, as many projects as they like. " +
   "Use save_profile only when the user asks to save a profile or to be alerted about new calls: ask them for every field, show the complete profile, and call it after their explicit yes. " +
+  "When the user asks how to find partners or join a consortium for an EU call, call get_grant and use its partner_search: give the places and the steps as returned, and offer to draft the partner offer from their profile. " +
+  "The user publishes the offer themselves; never name an organisation as looking for partners unless the user gave it. " +
   "Always link the official publisher page (source_url) and the grantledger page (url). Say when a call is closed or its deadline has passed. Never invent calls that are not in the results.";
 
 const searchSchema = {
@@ -78,7 +80,9 @@ const TOOLS = [
   {
     name: "get_grant",
     title: "Get one call",
-    description: "The full record of one funding call by its grantledger id (as returned by search_grants).",
+    description:
+      "The full record of one funding call by its grantledger id (as returned by search_grants). " +
+      "A current EU call that is not single-applicant also carries partner_search: where consortia look for partners for that call, how to publish a partner offer, and the fields of the offer.",
     inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },

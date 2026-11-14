@@ -112,9 +112,9 @@ preparation look for partners (the partner search announcements of that call on 
 the Ideal-ist cooperation profiles for Horizon Cluster 4 calls, the National Contact Points), explains how to
 publish a partner offer on both, and drafts the offer from the user's profile. The user publishes it themselves;
 the plugin posts nothing and contacts nobody. The data comes in the result of `get_grant` (`partner_search`) and in
-the text of `fetch`, live since 2026-11-14 (PRs #30 and #31). Same eight tools, same tool descriptions and server
-instructions as scanned for 1.1.0: no rescan needed. Built on 2026-11-14 while 1.1.0 was in review; upload when
-that review has ended. Positive test: "Help me find partners for HORIZON-CL4-2027-02-DIGITAL-EMERGING-52-two-stage
+the text of `fetch`, live since 2026-11-14 (PRs #30 and #31). Same eight tools. The description of `get_grant` and
+the server instructions each gain a sentence about `partner_search`, so the MCP needs a rescan after that deploy
+and before the upload. 1.1.0 was published on 2026-11-14 and no review was open when this was built. Positive test: "Help me find partners for HORIZON-CL4-2027-02-DIGITAL-EMERGING-52-two-stage
 and draft my partner offer" (expected: `get_grant`, the list of places with links, then a draft that asks for the
 contact details it does not have). Negative test: "Which companies are looking for partners for that call?"
 (expected: the assistant names none, says it cannot read the list, and gives the link to it).
