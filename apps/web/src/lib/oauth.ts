@@ -10,6 +10,9 @@ import { randomToken } from "./account";
 // Access tokens carry audience "grantledger-mcp", so a session cookie cannot pass as one and the reverse.
 
 export const SCOPE = "grants:read";
+// Granted by the consent page since it lists saving a profile. A connection made before that stays read only until
+// the user connects again.
+export const WRITE_SCOPE = "profiles:write";
 export const AUDIENCE = "grantledger-mcp";
 const CODE_TTL_S = 120;
 const ACCESS_TTL_S = 60 * 60;
@@ -65,13 +68,13 @@ export function authorizationServerMetadata(env: Env) {
     grant_types_supported: ["authorization_code", "refresh_token"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
-    scopes_supported: [SCOPE],
+    scopes_supported: [SCOPE, WRITE_SCOPE],
     service_documentation: `${base}/assistant`,
   };
 }
 
 export function protectedResourceMetadata(env: Env) {
-  return { resource: `${env.SITE_URL}/mcp`, authorization_servers: [env.SITE_URL], scopes_supported: [SCOPE], bearer_methods_supported: ["header"], resource_documentation: `${env.SITE_URL}/assistant` };
+  return { resource: `${env.SITE_URL}/mcp`, authorization_servers: [env.SITE_URL], scopes_supported: [SCOPE, WRITE_SCOPE], bearer_methods_supported: ["header"], resource_documentation: `${env.SITE_URL}/assistant` };
 }
 
 // RFC 8707: when the client names a resource, it must be our MCP endpoint (trailing slash and host case aside).
@@ -147,9 +150,11 @@ export interface Decision {
   rs: string;
   sub: string;
   exp: number;
+  // Set when the consent page that sealed this decision listed saving a profile.
+  w?: 1;
 }
 
-export const sealDecision = (env: Env, p: AuthorizeParams, email: string) => seal(env, "decision", { cid: p.clientId, ru: p.redirectUri, cc: p.codeChallenge, st: p.state, rs: p.requestedScope, sub: email, exp: Date.now() + CONSENT_TTL_MS } satisfies Decision);
+export const sealDecision = (env: Env, p: AuthorizeParams, email: string) => seal(env, "decision", { cid: p.clientId, ru: p.redirectUri, cc: p.codeChallenge, st: p.state, rs: p.requestedScope, sub: email, exp: Date.now() + CONSENT_TTL_MS, w: 1 } satisfies Decision);
 
 export async function openDecision(env: Env, blob: string): Promise<Decision | null> {
   const d = await open<Decision>(env, "decision", blob);
@@ -174,18 +179,20 @@ async function verify(env: Env, token: string, aud?: string): Promise<JWTPayload
 
 // The consent instant (gat, milliseconds) travels from the code into every token of the chain: "disconnect every
 // assistant" compares it with the revocation instant, so a refresh racing the disconnect cannot mint a survivor.
-export const issueCode = (env: Env, d: Decision) => sign(env, { type: "code", cid: d.cid, ru: d.ru, cc: d.cc, rs: d.rs, gat: Date.now(), jti: randomToken(12) }, d.sub, CODE_TTL_S);
+export const issueCode = (env: Env, d: Decision) => sign(env, { type: "code", cid: d.cid, ru: d.ru, cc: d.cc, rs: d.rs, gat: Date.now(), jti: randomToken(12), ...(d.w === 1 ? { w: 1 } : {}) }, d.sub, CODE_TTL_S);
 
 // A token pair. The family id travels through every refresh rotation of one consent, so a replayed refresh token
 // can kill the whole chain (RFC 9700 section 4.14.2).
-export async function issueTokenPair(env: Env, email: string, requestedScope: string, grantedAt: number, family = randomToken(8)) {
+// The write grant (w) travels the same way, so a refresh never widens what the consent allowed.
+export async function issueTokenPair(env: Env, email: string, requestedScope: string, grantedAt: number, write: boolean, family = randomToken(8)) {
+  const granted = write ? `${SCOPE} ${WRITE_SCOPE}` : SCOPE;
   return {
-    access_token: await sign(env, { type: "access", scope: SCOPE, gat: grantedAt }, email, ACCESS_TTL_S, AUDIENCE),
+    access_token: await sign(env, { type: "access", scope: granted, gat: grantedAt }, email, ACCESS_TTL_S, AUDIENCE),
     token_type: "Bearer",
     expires_in: ACCESS_TTL_S,
-    refresh_token: await sign(env, { type: "refresh", rs: requestedScope, fam: family, gat: grantedAt, jti: randomToken(12) }, email, REFRESH_TTL_S),
+    refresh_token: await sign(env, { type: "refresh", rs: requestedScope, fam: family, gat: grantedAt, jti: randomToken(12), ...(write ? { w: 1 } : {}) }, email, REFRESH_TTL_S),
     // ChatGPT compares this with what it asked for and warns on a partial grant; enforcement reads the JWT.
-    scope: requestedScope || SCOPE,
+    scope: requestedScope || granted,
   };
 }
 
@@ -220,7 +227,7 @@ export async function exchange(env: Env, form: FormData, revokedAt: (email: stri
     const revoked = await revokedAt(p.sub);
     if (revoked === undefined) return bad("invalid_grant", "This account is not Pro");
     if (isRevoked(revoked, p.gat)) return bad("invalid_grant", "Access was disconnected; connect again from your assistant");
-    return { ok: true, body: await issueTokenPair(env, p.sub, String(p.rs ?? ""), p.gat) };
+    return { ok: true, body: await issueTokenPair(env, p.sub, String(p.rs ?? ""), p.gat, p.w === 1) };
   }
   if (grant === "refresh_token") {
     const p = await verify(env, f("refresh_token"));
@@ -235,7 +242,7 @@ export async function exchange(env: Env, form: FormData, revokedAt: (email: stri
     const revoked = await revokedAt(p.sub);
     if (revoked === undefined) return bad("invalid_grant", "This account is no longer Pro");
     if (isRevoked(revoked, p.gat)) return bad("invalid_grant", "Access was disconnected; connect again from your assistant");
-    return { ok: true, body: await issueTokenPair(env, p.sub, String(p.rs ?? ""), p.gat, p.fam) };
+    return { ok: true, body: await issueTokenPair(env, p.sub, String(p.rs ?? ""), p.gat, p.w === 1, p.fam) };
   }
   return bad("unsupported_grant_type");
 }
@@ -247,4 +254,11 @@ export async function emailFromAccessToken(env: Env, token: string, revokedAt: (
   const revoked = await revokedAt(p.sub);
   if (revoked === undefined || isRevoked(revoked, p.gat)) return null;
   return p.sub;
+}
+
+// Whether an access token comes from a consent that allowed saving a profile. The caller has already resolved the
+// account from the same token, so expiry and revocation are checked.
+export async function accessTokenCanWrite(env: Env, token: string): Promise<boolean> {
+  const p = await verify(env, token, AUDIENCE);
+  return !!p && p.type === "access" && String(p.scope ?? "").split(" ").includes(WRITE_SCOPE);
 }

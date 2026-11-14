@@ -5,7 +5,7 @@ description: Score the user's own application draft against the published evalua
 
 # Score an application draft
 
-The user wrote a draft for a funding call and wants to know how it stands before they submit. You read the call's own criteria and score the draft against them. The draft stays in this conversation: the GrantLedger tools are read only and take ids, never the text of a draft.
+The user wrote a draft for a funding call and wants to know how it stands before they submit. You read the call's own criteria and score the draft against them. The draft stays in this conversation: no GrantLedger tool takes the text of a draft.
 
 ## Steps
 

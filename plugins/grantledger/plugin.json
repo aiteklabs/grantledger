@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "grantledger",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Public funding across Europe for companies, artists, researchers and non-profits: search the open ledger of grants, loans, guarantees and tax credits, reason over your GrantLedger Pro screening result, then plan, write and score an application for a call.",
   "author": {
     "name": "Aitek Labs",
@@ -25,7 +25,7 @@
       "interface": {
         "displayName": "GrantLedger",
         "shortDescription": "Public funding across Europe",
-        "longDescription": "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits published by official bodies in 21 European countries and EU-wide programmes, collected every night from official sources and searchable in any language, for startups and SMEs, artists, researchers, non-profits and public bodies. Ask which calls fund an industrial SME in Spain, which arts funds accept an independent musician, or which research programmes fit a lab in Austria; every answer links the official publisher page, and the assistant explains the conditions of a call in plain words. Pro accounts can ask what fits them or what is new for them: the assistant reads the profiles they saved, the calls their weekly Radar email already sent and every call screened for each profile with the rule each verdict relies on, then ranks, explains gaps and compares calls. For a call you choose, it turns the readiness gaps into a dated work plan, drafts the application sections from your profile and the published form, and scores your draft against the published evaluation criteria; the draft stays in the chat and you submit it yourself. A screening link pasted in the chat works too. Verdicts come from fixed rules on grantledger.eu, never from the model. Sign in with your GrantLedger Pro account when ChatGPT asks. Read only: the plugin cannot change your profiles or your account.",
+        "longDescription": "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits published by official bodies in 21 European countries and EU-wide programmes, collected every night from official sources and searchable in any language, for startups and SMEs, artists, researchers, non-profits and public bodies. Ask which calls fund an industrial SME in Spain, which arts funds accept an independent musician, or which research programmes fit a lab in Austria; every answer links the official publisher page, and the assistant explains the conditions of a call in plain words. Pro accounts can ask what fits them or what is new for them: the assistant reads the profiles they saved, the calls their weekly Radar email already sent and every call screened for each profile with the rule each verdict relies on, then ranks, explains gaps and compares calls. For a call you choose, it turns the readiness gaps into a dated work plan, drafts the application sections from your profile and the published form, and scores your draft against the published evaluation criteria; the draft stays in the chat and you submit it yourself. A screening link pasted in the chat works too. Verdicts come from fixed rules on grantledger.eu, never from the model. Sign in with your GrantLedger Pro account when ChatGPT asks. The plugin saves a profile only when you describe it and confirm it in the chat; it cannot change or remove a saved profile, nor your account.",
         "developerName": "Aitek Labs",
         "category": "Finance",
         "capabilities": [
@@ -36,7 +36,8 @@
           "Rank, compare and explain calls for a company, an organisation or an individual",
           "Plan an application from the readiness gaps, counted back from the deadline",
           "Draft application sections from your profile and the published form",
-          "Score your draft against the published evaluation criteria of the call"
+          "Score your draft against the published evaluation criteria of the call",
+          "Save a profile you confirm in the chat, so new calls that fit reach you by email"
         ],
         "websiteURL": "https://grantledger.eu/assistant",
         "supportURL": "https://grantledger.eu/legal-notice",

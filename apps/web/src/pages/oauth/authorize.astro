@@ -66,8 +66,9 @@ if (typeof params !== "string" && !account) Astro.cookies.set("gl_next", selfUrl
         <ul>
           <li>Search the ledger of public funding calls and read any record</li>
           <li>Read the screening results whose link you paste in the chat</li>
+          <li>Save a profile you describe in the chat, after you confirm it there. A saved profile is screened every week and new calls that fit are emailed to you</li>
         </ul>
-        <p class="small muted">Read only. It cannot change your profiles, your account or your payment.</p>
+        <p class="small muted">It cannot change or remove a saved profile, your account or your payment.</p>
         <form method="post" action={selfUrl} style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:1.2rem">
           <input type="hidden" name="blob" value={blob} />
           <button class="btn" type="submit" name="approve" value="yes">Allow</button>
