@@ -1,9 +1,13 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
+import { ZodError } from "zod";
 import { getGrant, searchGrants } from "~/lib/db";
 import { JSON_HEADERS, callerFromKey, fitJson, grantJson, keyRequired, parseSearch, rateLimited, type GrantJson } from "~/lib/api";
-import type { Account } from "~/lib/account";
-import { listProfiles, sentCalls } from "~/lib/radar";
+import { profileLimit, type Account } from "~/lib/account";
+import { accessTokenCanWrite } from "~/lib/oauth";
+import { parseProfileForm } from "~/lib/profile-form";
+import { listProfiles, saveProfile, sentCalls } from "~/lib/radar";
+import { screenProfile } from "~/lib/screen";
 
 export const prerender = false;
 
@@ -11,7 +15,8 @@ export const prerender = false;
 // answer, no session, no server-side stream). Discovery is open; tool calls are Pro only through two doors: OAuth
 // (the client gets a 401 with the resource metadata, runs the flow in src/lib/oauth.ts and comes back with a
 // bearer token), or the personal key as bearer or in the path (/mcp/<key>) for tools without OAuth.
-// Tools: search_grants, get_grant, get_fit, my_profiles, plus ChatGPT's pair search and fetch on the same data.
+// Tools: search_grants, get_grant, get_fit, my_profiles, plus ChatGPT's pair search and fetch on the same data, all
+// read only, and save_profile, the one tool that writes: it needs an OAuth connection whose consent allowed it.
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER = { name: "grantledger", version: "1.0.0" };
@@ -19,6 +24,7 @@ const INSTRUCTIONS =
   "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits from official European sources. " +
   "Use search_grants to find calls (free text in any language, country code, status), get_grant for one full record, and get_fit when the user gives a grantledger.eu/fit/<id> link: " +
   "it returns their company profile and the calls screened for it with the rule each verdict relies on. Verdicts are deterministic rules, not model output. " +
+  "Use save_profile only when the user asks to save a profile or to be alerted about new calls: ask them for every field, show the complete profile, and call it after their explicit yes. " +
   "Always link the official publisher page (source_url) and the grantledger page (url). Say when a call is closed or its deadline has passed. Never invent calls that are not in the results.";
 
 const searchSchema = {
@@ -83,6 +89,40 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
+  {
+    name: "save_profile",
+    title: "Save a profile",
+    description:
+      "Save a profile for the signed-in account from what the user tells you in the chat. The profile is screened now and again every Monday, and new calls that fit are emailed to the account. " +
+      "Ask the user for every field you do not know; never guess a value, leave it out instead. Before calling, show the complete profile in the chat and wait for the user's explicit yes, then pass confirmed true. " +
+      "Returns the screening id to pass to get_fit. It cannot change or remove a saved profile: the user does that on grantledger.eu/me.",
+    // Mirrors ProfileForm in src/lib/profile-form.ts, which validates the call; size and age bands are derived there.
+    inputSchema: {
+      type: "object",
+      properties: {
+        confirmed: { type: "boolean", description: "true only after the user saw the complete profile in the chat and said yes." },
+        company_name: { type: "string", description: "Name of the company, the organisation or the person." },
+        country: { type: "string", description: "ISO 3166-1 alpha-2 country code where they are established (FR, DE, ES, ...), or EU for anywhere in Europe." },
+        region: { type: "string", description: "NUTS code of their region (ES30, FRK2, LT02). Leave out for anywhere in the country." },
+        entity_type: { type: "string", enum: ["company", "sme", "startup", "individual", "research_org", "public_body", "ngo", "other"] },
+        headcount: { type: "string", enum: ["1", "2to9", "10to49", "50to249", "250plus", "unknown"], description: "People working there." },
+        founded_year: { type: "integer", description: "Year of creation." },
+        company_age: { type: "string", enum: ["lt1", "1to3", "3to10", "gt10", "unknown"], description: "Age in years, only when the year of creation is not known." },
+        revenue: { type: "string", enum: ["none", "lt100k", "100kto1m", "1mto10m", "gt10m", "unknown"], description: "Yearly revenue in euros." },
+        stage: { type: "string", enum: ["idea", "pre_seed", "seed", "growth", "established", "unknown"] },
+        trl: { type: "integer", minimum: 1, maximum: 9, description: "Technology readiness level of the project, when it has one." },
+        ip_status: { type: "string", enum: ["none", "pending", "granted", "unknown"], description: "Patents or other registered rights." },
+        prior_funding: { type: "string", enum: ["none", "national", "eu", "both", "unknown"], description: "Public funding already received." },
+        partners: { type: "string", enum: ["none", "identified", "signed", "unknown"], description: "Partners for a joint project." },
+        sectors: { type: "array", items: { type: "string" }, maxItems: 5, description: "NACE Rev. 2 divisions, two digits each (62 for software, 10 for food, 90 for arts)." },
+        funding_types: { type: "array", items: { type: "string", enum: ["grant", "loan", "guarantee", "tax_credit", "voucher", "equity", "prize", "procurement"] }, description: "Kinds of funding they look for. Leave out for any." },
+        keywords: { type: "array", items: { type: "string" }, maxItems: 15, description: "What they do and what the project is about, 1 to 3 words each, in English." },
+        consortium_ok: { type: "boolean", description: "true when they accept calls that require a consortium." },
+      },
+      required: ["confirmed", "country", "entity_type"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
 ];
 
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: Record<string, unknown> };
@@ -110,7 +150,20 @@ const grantText = (g: GrantJson) =>
     .filter(Boolean)
     .join("\n");
 
-async function callTool(name: string, args: Record<string, unknown>, caller: Account | "admin"): Promise<{ result: unknown; error?: string }> {
+// The tool arguments as the form the site posts, so one parser validates both and derives the same fields.
+function profileFormData(args: Record<string, unknown>): FormData {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(args)) {
+    if (k === "consortium_ok") {
+      if (v === true) form.set(k, "on");
+    } else if (k === "keywords" && Array.isArray(v)) form.set(k, v.map(String).join(","));
+    else if (Array.isArray(v)) for (const item of v) form.append(k, String(item));
+    else if (v !== null && v !== undefined) form.set(k, String(v));
+  }
+  return form;
+}
+
+async function callTool(name: string, args: Record<string, unknown>, caller: Account | "admin", canWrite: () => Promise<boolean>): Promise<{ result: unknown; error?: string }> {
   const site = env.SITE_URL;
   switch (name) {
     case "search_grants": {
@@ -158,6 +211,34 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
       const j = grantJson(g, site);
       return { result: { id: j.id, title: j.title, text: grantText(j), url: j.url, metadata: { kind: "grant", country: j.country, status: j.status, closes_at: j.closes_at, source_url: j.source_url } } };
     }
+    case "save_profile": {
+      // The personal key and the admin token carry no consent to write, and neither does a connection made when
+      // the consent page still said read only.
+      if (caller === "admin" || !(await canWrite())) return { result: null, error: `This connection is read only. To save a profile from the chat, the user disconnects GrantLedger in the assistant and connects it again. The profile can also be saved on ${site}/find` };
+      if (args.confirmed !== true) return { result: null, error: "Not saved. Show the complete profile to the user, wait for their yes, then call again with confirmed true." };
+      if (!args.country || !args.entity_type) return { result: null, error: "Not saved. country and entity_type are required: ask the user." };
+      let profile: ReturnType<typeof parseProfileForm>;
+      try {
+        profile = parseProfileForm(profileFormData(args));
+      } catch (err) {
+        // One line per field, so the assistant can ask the user again.
+        const detail = err instanceof ZodError ? err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") : "invalid";
+        return { result: null, error: `Not saved. Invalid profile. ${detail.slice(0, 400)}` };
+      }
+      const done = (fitId: string) => ({ result: { saved: true, name: profile.company_name, fit_id: fitId, fit_url: `${site}/fit/${fitId}`, manage_url: `${site}/me` } });
+      const profiles = await listProfiles(env.DB, caller.email);
+      // The same profile again, a retry for instance, is the one already saved.
+      const same = profiles.find((p) => p.form === JSON.stringify(profile));
+      if (same) return done(same.fit_check_id);
+      const full = { result: null, error: `Not saved. This account already holds ${profiles.length} saved profile(s), the most its plan allows. The user can remove one on ${site}/me` };
+      // Checked before screening, so an account at its limit does not pile up screenings.
+      if (profiles.length >= profileLimit(caller)) return full;
+      const id = crypto.randomUUID();
+      await screenProfile(env.DB, { id, profile, existing: false, email: caller.email, ip_hash: null, user_agent: "mcp", started: Date.now() });
+      const saved = await saveProfile(env.DB, caller, id);
+      if (saved === "full") return full;
+      return saved ? done(id) : { result: null, error: "Not saved. The screening did not finish; try again." };
+    }
     default:
       return { result: null, error: `Unknown tool: ${name}` };
   }
@@ -166,7 +247,7 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
 const reply = (id: Rpc["id"], result: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result });
 const fail = (id: Rpc["id"], code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 
-async function handle(msg: unknown, caller: Account | "admin" | null): Promise<unknown | undefined> {
+async function handle(msg: unknown, caller: Account | "admin" | null, canWrite: () => Promise<boolean>): Promise<unknown | undefined> {
   if (!msg || typeof msg !== "object" || Array.isArray(msg)) return fail(null, -32600, "Invalid request");
   const { id, method } = msg as Rpc;
   const params = ((msg as Rpc).params && typeof (msg as Rpc).params === "object" ? (msg as Rpc).params : {}) as Record<string, unknown>;
@@ -188,7 +269,7 @@ async function handle(msg: unknown, caller: Account | "admin" | null): Promise<u
       if (!TOOLS.some((t) => t.name === name)) return fail(id, -32602, `Unknown tool: ${name}`);
       // The POST handler answers 401 to a tool call without a caller before it gets here.
       if (!caller) return fail(id, -32600, "Unauthorized");
-      const { result, error } = await callTool(name, args, caller);
+      const { result, error } = await callTool(name, args, caller, canWrite);
       if (error) return reply(id, { content: [{ type: "text", text: error }], isError: true });
       return reply(id, { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result });
     }
@@ -219,7 +300,9 @@ export const POST: APIRoute = async ({ request, params }) => {
   if (Array.isArray(body)) return new Response(JSON.stringify(fail(null, -32600, "Batches are not supported: send one message per request")), { status: 400, headers: CORS });
   let answer: unknown;
   try {
-    answer = await handle(body, caller);
+    // Only an OAuth token can carry the consent to write; a key in the path wins over the bearer in callerFromKey.
+    const bearer = (request.headers.get("authorization") ?? "").replace(/^Bearer /, "").trim();
+    answer = await handle(body, caller, async () => !params.key && (await accessTokenCanWrite(env, bearer)));
   } catch (err) {
     answer = fail((body as Rpc)?.id ?? null, -32603, err instanceof Error ? err.message.slice(0, 200) : "Internal error");
   }
