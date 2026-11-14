@@ -65,6 +65,7 @@ export interface Content {
   show_aria: string;
   opens: string; // {date}
   gaps_summary: string; // {items} {hours}
+  find_partners: string;
   items: (n: number) => string;
   state: Record<GapState, string>;
   bucket: Record<Bucket, string>;
@@ -139,6 +140,7 @@ const en: Content = {
   show_aria: "Show",
   opens: "opens {date}",
   gaps_summary: "Missing for a clean submission: {items}, about {hours} hours",
+  find_partners: "Find partners",
   items: (n) => `${n} item${n === 1 ? "" : "s"}`,
   state: { missing: "missing", check: "check", ok: "ok" },
   bucket: { documents: "Documents", evidence: "Evidence", compliance: "Compliance", partners: "Partners", narrative: "Narrative" },
@@ -213,6 +215,7 @@ const fr: Content = {
   show_aria: "Afficher",
   opens: "ouverture {date}",
   gaps_summary: "Manque pour un dossier complet : {items}, environ {hours} heures",
+  find_partners: "Trouver des partenaires",
   items: (n) => `${n} élément${n === 1 ? "" : "s"}`,
   state: { missing: "manquant", check: "à vérifier", ok: "ok" },
   bucket: { documents: "Documents", evidence: "Preuves", compliance: "Conformité", partners: "Partenaires", narrative: "Narratif" },
@@ -287,6 +290,7 @@ const de: Content = {
   show_aria: "Anzeigen",
   opens: "öffnet {date}",
   gaps_summary: "Fehlt für eine vollständige Einreichung: {items}, etwa {hours} Stunden",
+  find_partners: "Partner finden",
   items: (n) => `${n} ${n === 1 ? "Punkt" : "Punkte"}`,
   state: { missing: "fehlt", check: "prüfen", ok: "ok" },
   bucket: { documents: "Dokumente", evidence: "Nachweise", compliance: "Compliance", partners: "Partner", narrative: "Antragstext" },
@@ -361,6 +365,7 @@ const es: Content = {
   show_aria: "Mostrar",
   opens: "abre {date}",
   gaps_summary: "Falta para una presentación completa: {items}, unas {hours} horas",
+  find_partners: "Buscar socios",
   items: (n) => `${n} elemento${n === 1 ? "" : "s"}`,
   state: { missing: "falta", check: "verificar", ok: "ok" },
   bucket: { documents: "Documentos", evidence: "Evidencias", compliance: "Cumplimiento", partners: "Socios", narrative: "Narrativa" },
@@ -435,6 +440,7 @@ const it: Content = {
   show_aria: "Mostra",
   opens: "apre il {date}",
   gaps_summary: "Manca per una candidatura completa: {items}, circa {hours} ore",
+  find_partners: "Trova partner",
   items: (n) => `${n} ${n === 1 ? "elemento" : "elementi"}`,
   state: { missing: "mancante", check: "da verificare", ok: "ok" },
   bucket: { documents: "Documenti", evidence: "Evidenze", compliance: "Conformità", partners: "Partner", narrative: "Narrativa" },
@@ -509,6 +515,7 @@ const pt: Content = {
   show_aria: "Mostrar",
   opens: "abre a {date}",
   gaps_summary: "Em falta para uma submissão completa: {items}, cerca de {hours} horas",
+  find_partners: "Encontrar parceiros",
   items: (n) => `${n} ${n === 1 ? "item" : "itens"}`,
   state: { missing: "em falta", check: "verificar", ok: "ok" },
   bucket: { documents: "Documentos", evidence: "Evidências", compliance: "Conformidade", partners: "Parceiros", narrative: "Narrativa" },
@@ -583,6 +590,7 @@ const nl: Content = {
   show_aria: "Tonen",
   opens: "opent {date}",
   gaps_summary: "Ontbreekt voor een volledige indiening: {items}, ongeveer {hours} uur",
+  find_partners: "Partners vinden",
   items: (n) => `${n} ${n === 1 ? "punt" : "punten"}`,
   state: { missing: "ontbreekt", check: "controleren", ok: "ok" },
   bucket: { documents: "Documenten", evidence: "Bewijs", compliance: "Compliance", partners: "Partners", narrative: "Aanvraagtekst" },
@@ -657,6 +665,7 @@ const pl: Content = {
   show_aria: "Pokaż",
   opens: "otwarcie {date}",
   gaps_summary: "Brakuje do kompletnego złożenia: {items}, około {hours} godzin",
+  find_partners: "Znajdź partnerów",
   items: (n) => {
     const m10 = n % 10;
     const m100 = n % 100;
