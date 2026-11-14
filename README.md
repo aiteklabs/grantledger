@@ -40,7 +40,7 @@ One adapter file per feed in `packages/ingest/src/sources/`, registered in `inde
 | Germany | Förderberatung des Bundes, DFG |
 | Greece | ESPA |
 | Ireland | Enterprise Ireland, National Enterprise Hub, Research Ireland |
-| Italy | incentivi.gov.it |
+| Italy | Incentivi Italia (incentivitalia.gov.it) |
 | Lithuania | ES investicijos, Inovacijų agentūra |
 | Netherlands | RVO |
 | Norway | Forskningsrådet, Innovasjon Norge, Tilskudd.no |
@@ -52,14 +52,14 @@ One adapter file per feed in `packages/ingest/src/sources/`, registered in `inde
 | United Kingdom | Find a grant, PRS Foundation, Sussex Community Foundation, Brighton & Hove City Council |
 | United States | Grants.gov |
 
-Access is an official API, open data export, RSS or JSON where one exists, server-rendered HTML otherwise. Publishers that answer Cloudflare egress with a bot challenge run from the GitHub Actions runner (`runner: "local"` on the adapter): Vinnova and VLAIO today. FFG (Austria) blocks every datacenter IP and is not refreshed. Förderdatenbank des Bundes (Radware bot manager, 30 second crawl delay), EuroAccess (terms forbid database storage) and Arts Council England (Cloudflare JavaScript challenge on every request) are not crawled.
+Access is an official API, open data export, RSS or JSON where one exists, server-rendered HTML otherwise. Publishers that answer Cloudflare egress with a bot challenge run from the GitHub Actions runner (`runner: "local"` on the adapter): Vinnova and VLAIO today, plus Incentivi Italia, whose export is too large for a Worker. The same runner also crawls any feed whose last Worker crawl failed, so a publisher that starts refusing Cloudflare is still refreshed the same morning. FFG (Austria) blocks every datacenter IP and is not refreshed. Förderdatenbank des Bundes (Radware bot manager, 30 second crawl delay), EuroAccess (terms forbid database storage) and Arts Council England (Cloudflare JavaScript challenge on every request) are not crawled.
 
 The archive starts on 2026-09-29: a call first seen after its deadline, already closed, or without any dates never enters the ledger. Calls seen while current stay when they close, with every content change kept in `grant_versions` and the raw payloads in R2 under `raw/{source}/{id}/{content_hash}.json`.
 
 ## Schedule (UTC)
 
 - 03:00 daily: the ingest Worker crawls every Worker-runnable source. Spain is incremental (last 3 days), the rest is a full recrawl. A failed crawl is retried once, an hour later.
-- 03:30 daily: the GitHub Actions runner crawls the local-runner sources and pushes to `POST /ingest`.
+- 04:30 daily: the GitHub Actions runner crawls the local-runner sources, plus every feed whose Worker crawl failed that night (`GET /failing`), and pushes to `POST /ingest`.
 - 05:00 daily: the Worker asks the site to enrich up to 150 new current calls, under the monthly model budget set in the admin.
 - Monday 06:00: the Worker asks the site to send the Radar emails.
 
