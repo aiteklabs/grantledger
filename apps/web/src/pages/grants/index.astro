@@ -90,6 +90,7 @@ const chips: [string, string, string][] = [["", d.status_current, ""], ["open", 
       </div>
     </form>
     <p class="muted small mono">{fmtInt(result.total)} {d.grants_results} · {d.grants_page} {result.page} {d.grants_of} {pages}</p>
+    {result.broadened && <p class="callout" style="border-left-color:var(--amber)">{d.grants_broadened}</p>}
     <ul class="ledger">{result.items.map((g) => <GrantRow grant={g} locale={Astro.locals.locale} />)}</ul>
     {result.items.length === 0 && <p class="callout">No records match. Try fewer filters or another keyword. Titles are in the source language: Spanish for BDNS, French for aides-entreprises.</p>}
     <nav class="pager" aria-label="Pagination">

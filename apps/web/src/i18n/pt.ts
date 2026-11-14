@@ -53,6 +53,7 @@ export const pt: Dictionary = {
   grants_all: "Todos os apoios",
   grants_matching: "Apoios correspondentes a",
   grants_results: "resultados",
+  grants_broadened: "Menos de cinco avisos contêm todas as palavras da sua pesquisa. Estes contêm pelo menos uma, do mais próximo ao menos próximo.",
   grants_page: "página",
   grants_of: "de",
   grant_official: "Página oficial do aviso",

@@ -53,6 +53,7 @@ export const it: Dictionary = {
   grants_all: "Tutti i bandi",
   grants_matching: "Bandi corrispondenti a",
   grants_results: "risultati",
+  grants_broadened: "Meno di cinque bandi contengono tutte le parole della ricerca. Questi ne contengono almeno una, dal più pertinente al meno pertinente.",
   grants_page: "pagina",
   grants_of: "di",
   grant_official: "Pagina ufficiale del bando",

@@ -72,6 +72,9 @@ export interface SearchParams {
   // ISO date: only calls first seen in the ledger on or after it.
   since?: string;
   sort?: "deadline" | "recent" | "relevance";
+  // True: every word must appear, however few calls that leaves. For a list shown under a heading that names a
+  // programme, where calls with only one of the words would be wrong.
+  exact?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -92,9 +95,28 @@ function ftsTerm(w: string): string {
   return w.length <= 3 ? `"${w}"` : `"${w}"*`;
 }
 
-// Escapes user text for an FTS5 MATCH expression used by the site search: every word must appear.
-export function ftsQuery(q: string): string {
-  return ftsWords(q, 8).map(ftsTerm).join(" ");
+// Words that say "funding" in a search and nothing about what it is for: every record is a funding call, and few
+// publishers write the word the way the question does.
+const FILLER = new Set(["grant", "grants", "funding", "subsidy", "subsidies", "subvention", "subventions", "aides", "call", "calls", "opportunity", "opportunities"]);
+
+// Abbreviations that publishers spell out as often as not.
+const SYNONYMS: Record<string, string[]> = {
+  ai: ["artificial intelligence"],
+  sme: ["smes", "small and medium"],
+  smes: ["sme", "small and medium"],
+  startup: ["start up"],
+  startups: ["start up"],
+};
+
+// The words of a site search as FTS5 expressions, one per word: the word itself or one of its spellings. Filler
+// words are dropped unless the search is nothing else.
+function searchTerms(q: string): string[] {
+  const all = ftsWords(q, 8);
+  const words = all.filter((w) => !FILLER.has(w));
+  return (words.length ? words : all).map((w) => {
+    const alt = SYNONYMS[w];
+    return alt ? `(${[w, ...alt].map(ftsTerm).join(" OR ")})` : ftsTerm(w);
+  });
 }
 
 // One profile keyword as an FTS5 expression: a phrase like "voice roleplay" only matches when its words sit within a
@@ -109,23 +131,36 @@ export function keywordQuery(kw: string): string {
 // Listing pages are the crawlers' favourite: every filter, sort and page combination is a link, and each
 // one costs a COUNT plus a sorted scan of the live calls (about 66k rows read per call, 900 calls a day).
 // The result only moves with the nightly ingest, so one D1 pass per distinct query per data center per hour.
-export async function searchGrants(db: D1Database, p: SearchParams): Promise<{ items: GrantView[]; total: number; page: number; pageSize: number }> {
+export interface SearchResult {
+  items: GrantView[];
+  total: number;
+  page: number;
+  pageSize: number;
+  // True when too few calls hold every word of the search: the items then hold at least one of them, best first.
+  broadened: boolean;
+}
+
+// Below this many calls with every word, a search of two words or more is widened to calls with any of them.
+const BROADEN_BELOW = 5;
+
+export async function searchGrants(db: D1Database, p: SearchParams): Promise<SearchResult> {
   const key = `https://grantledger.cache/search?${encodeURIComponent(JSON.stringify(p, Object.keys(p).sort()))}`;
   return cachedJson(key, SEARCH_TTL_S, () => querySearchGrants(db, p));
 }
-async function querySearchGrants(db: D1Database, p: SearchParams): Promise<{ items: GrantView[]; total: number; page: number; pageSize: number }> {
+async function querySearchGrants(db: D1Database, p: SearchParams): Promise<SearchResult> {
   const page = Math.max(1, p.page ?? 1);
   // "All" on the list page asks for 1000: enough for any filtered view, bounded for the archive.
   const pageSize = Math.min(1000, Math.max(5, p.pageSize ?? 20));
   const where: string[] = [];
   const binds: unknown[] = [];
-  const fts = p.q ? ftsQuery(p.q) : "";
-  const from = `grants g ${VIEW_JOIN}`;
-  if (fts) {
-    // The publisher's text and the English summary and search terms: an English query finds a Spanish call.
-    where.push("(g.rowid IN (SELECT rowid FROM grants_fts WHERE grants_fts MATCH ?) OR g.id IN (SELECT grant_id FROM enrichment_fts WHERE enrichment_fts MATCH ?))");
-    binds.push(fts, fts);
-  }
+  const terms = p.q ? searchTerms(p.q) : [];
+  // Every word must appear; "AI startup grants" then finds almost nothing, so a thin result is widened below.
+  let fts = terms.join(" AND ");
+  // A text search reads both indexes once, the publisher's text and the English summary and search terms (an
+  // English query finds a Spanish call), and adds up the two scores per call. Lower is a better match.
+  const RANKED =
+    "WITH hits AS (SELECT g.id AS id, f.rank AS score FROM grants_fts f JOIN grants g ON g.rowid = f.rowid WHERE grants_fts MATCH ? " +
+    "UNION ALL SELECT grant_id AS id, rank AS score FROM enrichment_fts WHERE enrichment_fts MATCH ?), ranked AS (SELECT id, SUM(score) AS score FROM hits GROUP BY id)";
   if (p.country === "EUROPE") {
     const codes = [...EUROPE];
     where.push(`g.country IN (${codes.map(() => "?").join(",")})`);
@@ -166,19 +201,35 @@ async function querySearchGrants(db: D1Database, p: SearchParams): Promise<{ ite
     binds.push(`%"${p.beneficiary}"%`);
   }
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const source = (text: string) => (text ? { with: RANKED, from: "ranked r JOIN grants g ON g.id = r.id", binds: [text, text] } : { with: "", from: "grants g", binds: [] });
+  const count = async (text: string) => {
+    const q = source(text);
+    return (await db.prepare(`${q.with} SELECT COUNT(*) AS n FROM ${q.from} ${whereSql}`).bind(...q.binds, ...binds).first<{ n: number }>())?.n ?? 0;
+  };
+  let total = await count(fts);
+  let broadened = false;
+  if (!p.exact && terms.length > 1 && total < BROADEN_BELOW) {
+    const any = terms.join(" OR ");
+    const wider = await count(any);
+    if (wider > total) {
+      fts = any;
+      total = wider;
+      broadened = true;
+    }
+  }
+  // A widened result is only useful best match first, whatever sort was asked.
   const order =
-    p.sort === "recent"
-      ? "g.first_seen_at DESC"
-      : p.sort === "relevance" && fts
-        ? "COALESCE((SELECT bm25(grants_fts) FROM grants_fts WHERE grants_fts MATCH ? AND rowid = g.rowid), 0) + COALESCE((SELECT bm25(enrichment_fts) FROM enrichment_fts WHERE enrichment_fts MATCH ? AND grant_id = g.id), 0)"
+    fts && (broadened || p.sort === "relevance")
+      ? "r.score, g.id"
+      : p.sort === "recent"
+        ? "g.first_seen_at DESC"
         : "CASE WHEN g.closes_at IS NULL THEN 1 ELSE 0 END, g.closes_at ASC, g.id";
-  const total = await db.prepare(`SELECT COUNT(*) AS n FROM ${from} ${whereSql}`).bind(...binds).first<{ n: number }>();
-  const orderBinds = p.sort === "relevance" && fts ? [fts, fts] : [];
+  const q = source(fts);
   const rows = await db
-    .prepare(`SELECT ${VIEW_SELECT} FROM ${from} ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`)
-    .bind(...binds, ...orderBinds, pageSize, (page - 1) * pageSize)
+    .prepare(`${q.with} SELECT ${VIEW_SELECT} FROM ${q.from} ${VIEW_JOIN} ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`)
+    .bind(...q.binds, ...binds, pageSize, (page - 1) * pageSize)
     .all<GrantRow>();
-  return { items: rows.results.map(toView), total: total?.n ?? 0, page, pageSize };
+  return { items: rows.results.map(toView), total, page, pageSize, broadened };
 }
 
 export async function getGrant(db: D1Database, id: string): Promise<GrantView | null> {

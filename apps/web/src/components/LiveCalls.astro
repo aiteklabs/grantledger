@@ -7,7 +7,7 @@ import { fmtInt } from "~/lib/format";
 // Current calls from the ledger inside a guide, so the page shows what is open on the day it is read.
 interface Props { heading: string; q?: string; country?: string; limit?: number }
 const { heading, q, country, limit = 6 } = Astro.props;
-const result = await searchGrants(env.DB, { q, country, sort: q ? "relevance" : "deadline", pageSize: limit });
+const result = await searchGrants(env.DB, { q, country, sort: q ? "relevance" : "deadline", exact: true, pageSize: limit });
 const query = new URLSearchParams();
 if (q) query.set("q", q);
 if (country) query.set("country", country);

@@ -53,6 +53,7 @@ export const es: Dictionary = {
   grants_all: "Todas las ayudas",
   grants_matching: "Ayudas que coinciden con",
   grants_results: "resultados",
+  grants_broadened: "Menos de cinco convocatorias contienen todas las palabras de su búsqueda. Estas contienen al menos una, de la más cercana a la menos cercana.",
   grants_page: "página",
   grants_of: "de",
   grant_official: "Página oficial de la convocatoria",
