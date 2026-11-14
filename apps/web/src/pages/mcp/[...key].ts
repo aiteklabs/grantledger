@@ -187,7 +187,9 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
   switch (name) {
     case "search_grants": {
       const r = await searchGrants(env.DB, parseSearch(args));
-      return { result: { total: r.total, page: r.page, per: r.pageSize, items: r.items.map((g) => compact(grantJson(g, site))) } };
+      // A widened search holds calls with only one of the words: the assistant must not present them as matches.
+      const note = r.broadened ? { note: "Fewer than five calls contain every word of the query, so these contain at least one of them, best match first. Check each one against what the user asked before presenting it." } : {};
+      return { result: { total: r.total, page: r.page, per: r.pageSize, ...note, items: r.items.map((g) => compact(grantJson(g, site))) } };
     }
     case "get_grant": {
       const g = await getGrant(env.DB, String(args.id ?? ""));
