@@ -8,7 +8,7 @@ on:
     inputs:
       sources:
         description: Space-separated source ids
-        default: se_vinnova be_vlaio it_incentivi
+        default: se_vinnova be_vlaio
 permissions:
   contents: read
 jobs:
@@ -25,7 +25,7 @@ jobs:
         env:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           INGEST_URL: ${{ secrets.INGEST_URL }}
-          SOURCES: ${{ github.event.inputs.sources || 'se_vinnova be_vlaio it_incentivi' }}
+          SOURCES: ${{ github.event.inputs.sources || 'se_vinnova be_vlaio' }}
         # Every source runs even when one fails; the job still fails at the end so a broken crawl is visible.
         run: |
           # On the nightly schedule, also crawl every feed whose last Worker crawl failed: a publisher that starts

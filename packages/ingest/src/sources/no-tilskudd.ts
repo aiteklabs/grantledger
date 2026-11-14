@@ -144,7 +144,18 @@ function dayEnd(date: string): string {
 }
 
 async function fetchScheme(id: number): Promise<{ version: PublishedVersion | null; completed: boolean; updated: string | null }> {
-  const html = await fetchHtml(`${HOST}/ordning/${dtId(id)}`, UA);
+  // From datacenter networks the publisher's gateway answers 404 or 504 for a scheme page now and then, and serves
+  // the same page a moment later: three tries before the crawl gives up.
+  let html = "";
+  for (let attempt = 0; ; attempt++) {
+    try {
+      html = await fetchHtml(`${HOST}/ordning/${dtId(id)}`, UA);
+      break;
+    } catch (err) {
+      if (attempt === 2) throw err;
+      await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+    }
+  }
   const json = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1];
   const scheme = json ? (JSON.parse(json) as SchemePage).props?.pageProps?.grant?.grantScheme : null;
   return { version: scheme?.year?.publishedVersion ?? null, completed: scheme?.completed ?? false, updated: scheme?.year?.updated ?? null };

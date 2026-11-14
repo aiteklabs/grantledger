@@ -1,5 +1,5 @@
 import type { Grant } from "@grantledger/schema";
-import { fetchJson, num, stripHtml } from "../util";
+import { num, stripHtml } from "../util";
 import { LEGACY_IDS } from "./it-incentivi-ids";
 import type { Page, Source } from "./types";
 
@@ -8,7 +8,6 @@ import type { Page, Source } from "./types";
 // regions and amounts. It replaced the Solr index of incentivi.gov.it, which now redirects to the new portal.
 const SITE = "https://www.incentivitalia.gov.it";
 const EXPORT = `${SITE}/open-data/incentivi/OpenData_Incentivi.json`;
-const PAGE_SIZE = 200;
 const LICENSE = "CC BY 4.0, Incentivi Italia (incentivitalia.gov.it)";
 
 type Doc = Record<string, string | number | string[] | null | undefined>;
@@ -102,24 +101,50 @@ function normalize(d: Doc): Grant {
   };
 }
 
-// The export is one file: download it once per process, then hand it out in pages.
-let catalogue: Promise<Doc[]> | undefined;
+// The export is one 29 MB file, too large to parse inside a Worker. It is read in byte ranges instead: each page
+// fetches CHUNK bytes from the cursor, keeps the records that are complete in it and resumes after the last one.
+const CHUNK = 1_000_000;
+// version: Last-Modified of the file. The portal rewrites it once a day; a crawl that straddles the rewrite stops
+// instead of reading offsets of the old file in the new one.
+interface Cursor { offset: number; version: string | null }
 
-// The file is too large to parse inside a Worker (128 MB), so this feed runs on the GitHub runner.
+// Byte ranges of the complete top-level objects in a slice of a JSON array that starts between two records.
+function completeObjects(bytes: Uint8Array): { ranges: [number, number][]; started: boolean } {
+  const ranges: [number, number][] = [];
+  let depth = 0, inString = false, escaped = false, open = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (b === 0x5c) escaped = true;
+      else if (b === 0x22) inString = false;
+    } else if (b === 0x22) inString = true;
+    else if (b === 0x7b) { if (depth++ === 0) open = i; }
+    else if (b === 0x7d && --depth === 0) ranges.push([open, i + 1]);
+  }
+  return { ranges, started: open >= 0 };
+}
+
 export const itIncentivi: Source = {
   id: "it_incentivi",
   license: LICENSE,
-  runner: "local",
   start() {
-    return "0";
+    return JSON.stringify({ offset: 0, version: null } satisfies Cursor);
   },
   async fetchPage(cursor): Promise<Page> {
-    const start = Number(cursor);
-    catalogue ??= fetchJson<Doc[]>(EXPORT, { headers: { "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)" } });
-    const all = await catalogue;
-    if (!Array.isArray(all) || all.length === 0) throw new Error("Incentivi Italia export is empty or not a list (format change?)");
-    const docs = all.slice(start, start + PAGE_SIZE);
+    const c = JSON.parse(cursor) as Cursor;
+    const res = await fetch(EXPORT, { headers: { "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)", range: `bytes=${c.offset}-${c.offset + CHUNK - 1}` } });
+    if (res.status !== 206) throw new Error(`HTTP ${res.status} for the Incentivi Italia export at byte ${c.offset} (a byte range was expected)`);
+    const version = res.headers.get("last-modified");
+    if (c.version && version !== c.version) throw new Error("Incentivi Italia export was rewritten during the crawl");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const { ranges, started } = completeObjects(bytes);
+    if (ranges.length === 0 && (started || c.offset === 0)) throw new Error(`Incentivi Italia export: no complete record at byte ${c.offset} (format change?)`);
+    const decoder = new TextDecoder();
+    const docs = ranges.map(([from, to]) => JSON.parse(decoder.decode(bytes.subarray(from, to))) as Doc);
     const grants = docs.map(normalize);
-    return { grants, raws: docs.map((d, i) => ({ source_id: grants[i]!.source_id, payload: d })), next: start + PAGE_SIZE < all.length ? String(start + PAGE_SIZE) : null };
+    // No record left in the range: only the closing bracket of the list remained.
+    const next: Cursor | null = ranges.length > 0 ? { offset: c.offset + ranges[ranges.length - 1]![1], version } : null;
+    return { grants, raws: docs.map((d, i) => ({ source_id: grants[i]!.source_id, payload: d })), next: next ? JSON.stringify(next) : null };
   },
 };
