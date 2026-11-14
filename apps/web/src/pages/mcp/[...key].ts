@@ -234,7 +234,10 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
       const g = await getGrant(env.DB, id);
       if (!g) return { result: null, error: "No grant with this id." };
       const j = grantJson(g, site);
-      return { result: { id: j.id, title: j.title, text: grantText(j), url: j.url, metadata: { kind: "grant", country: j.country, status: j.status, closes_at: j.closes_at, source_url: j.source_url } } };
+      // The same partner help as get_grant, for clients that only know search and fetch.
+      const partners = await partnerSearch(g);
+      const text = grantText(j) + (partners ? `\n\nFinding consortium partners and publishing a partner offer:\n${JSON.stringify(partners, null, 1)}` : "");
+      return { result: { id: j.id, title: j.title, text, url: j.url, metadata: { kind: "grant", country: j.country, status: j.status, closes_at: j.closes_at, source_url: j.source_url } } };
     }
     case "screen_profile":
     case "save_profile": {
