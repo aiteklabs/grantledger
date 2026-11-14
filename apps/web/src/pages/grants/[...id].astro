@@ -4,6 +4,7 @@ import Base from "~/layouts/Base.astro";
 import { getGrant, getVersions } from "~/lib/db";
 import { COUNTRY_NAMES, FUNDING_TYPE_LABELS, SOURCE_NAMES, fmtDate, fmtMoney } from "~/lib/format";
 import { t } from "~/i18n";
+import { hasPartnerSearch } from "~/lib/partners";
 
 export const prerender = false;
 const d = t(Astro.locals.locale);
@@ -59,7 +60,7 @@ const jsonLd = {
         <dt>Country</dt><dd>{COUNTRY_NAMES[g.country] ?? g.country}{g.regions.length > 0 && <span class="muted small"> · {g.regions.slice(0, 6).join(", ")}</span>}</dd>
         <dt>Type</dt><dd>{g.funding_types.map((f) => FUNDING_TYPE_LABELS[f] ?? f).join(", ") || "—"}</dd>
         <dt>Beneficiaries</dt><dd>{g.beneficiary_types.map((b) => b.replace("_", " ")).join(", ") || "—"}</dd>
-        <dt>Consortium</dt><dd>{g.consortium === "required" ? d.consortium_required : g.consortium === "single" ? d.consortium_single : "—"}</dd>
+        <dt>Consortium</dt><dd>{g.consortium === "required" ? d.consortium_required : g.consortium === "single" ? d.consortium_single : "—"}{hasPartnerSearch(g) && <> · <a href={`/partners?call=${encodeURIComponent(g.id)}`} rel="nofollow">Find partners</a></>}</dd>
         <dt>Sectors</dt><dd>{g.sectors.slice(0, 8).join(", ") || "—"}</dd>
         <dt>{d.grant_opens}</dt><dd>{fmtDate(g.opens_at) || "—"}</dd>
         <dt>{d.grant_deadline}</dt><dd>{fmtDate(g.closes_at) || "—"}</dd>

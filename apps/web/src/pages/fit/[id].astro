@@ -11,6 +11,7 @@ import { HOURLY_EUR, gapHours } from "~/lib/readiness";
 import { t } from "~/i18n";
 import { fitPage } from "~/i18n/pages/fit";
 import { currentAccount } from "~/lib/account";
+import { hasPartnerSearch } from "~/lib/partners";
 
 export const prerender = false;
 const d = t(Astro.locals.locale);
@@ -155,7 +156,7 @@ const savedProfile = account ? await env.DB.prepare("SELECT id FROM radars WHERE
                     <details style="margin-top:0.7rem">
                       <summary style="cursor:pointer;font-weight:600;font-size:0.95rem">{c.gaps_summary.replace("{items}", c.items(open.length)).replace("{hours}", String(gapHours(gaps)))}</summary>
                       <table class="small" style="margin-top:0.5rem">
-                        <tbody>{gaps.map((x) => <tr><td style="white-space:nowrap"><span class={`tag ${x.state === "ok" ? "fit" : x.state === "missing" ? "no" : "not_yet"}`}>{c.state[x.state]}</span></td><td class="muted" style="white-space:nowrap">{c.bucket[x.bucket]}</td><td>{x.text}</td><td class="mono" style="white-space:nowrap">{x.hours}h</td></tr>)}</tbody>
+                        <tbody>{gaps.map((x, i) => <tr><td style="white-space:nowrap"><span class={`tag ${x.state === "ok" ? "fit" : x.state === "missing" ? "no" : "not_yet"}`}>{c.state[x.state]}</span></td><td class="muted" style="white-space:nowrap">{c.bucket[x.bucket]}</td><td>{x.text}{x.state !== "ok" && hasPartnerSearch(m.grant) && gaps.findIndex((y) => y.bucket === "partners") === i && <> <a href={`/partners?call=${encodeURIComponent(m.grant_id)}`}>{c.find_partners}</a></>}</td><td class="mono" style="white-space:nowrap">{x.hours}h</td></tr>)}</tbody>
                       </table>
                     </details>
                   )}

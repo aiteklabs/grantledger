@@ -5,6 +5,7 @@ import { getGrant, searchGrants } from "~/lib/db";
 import { JSON_HEADERS, callerFromKey, fitJson, grantJson, keyRequired, parseSearch, rateLimited, type GrantJson } from "~/lib/api";
 import { profileLimit, type Account } from "~/lib/account";
 import { accessTokenCanWrite } from "~/lib/oauth";
+import { partnerSearch } from "~/lib/partners";
 import { parseProfileForm } from "~/lib/profile-form";
 import { listProfiles, saveProfile, sentCalls } from "~/lib/radar";
 import { screenProfile } from "~/lib/screen";
@@ -193,7 +194,10 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
     }
     case "get_grant": {
       const g = await getGrant(env.DB, String(args.id ?? ""));
-      return g ? { result: grantJson(g, site) } : { result: null, error: "No grant with this id." };
+      if (!g) return { result: null, error: "No grant with this id." };
+      // A current EU call that is not single-applicant also says where partners are sought and how to publish an offer.
+      const partners = await partnerSearch(g);
+      return { result: partners ? { ...grantJson(g, site), partner_search: partners } : grantJson(g, site) };
     }
     case "get_fit": {
       const id = String(args.id ?? "").match(/[0-9a-f-]{36}/)?.[0] ?? "";
