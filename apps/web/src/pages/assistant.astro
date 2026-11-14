@@ -1,7 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
-import { CHATGPT_PLUGIN_URL, currentAccount, rotateApiKey } from "~/lib/account";
+import { CHATGPT_PLUGIN_URL, PLANS, currentAccount, rotateApiKey } from "~/lib/account";
 import { listProfiles } from "~/lib/radar";
 export const prerender = false;
 
@@ -21,6 +21,17 @@ const flag = Astro.url.searchParams.get("rotated") === "1" ? "rotated" : Astro.u
     <span class="kicker">Assistants · Pro</span>
     <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">GrantLedger in ChatGPT and Claude</h1>
     <p class="lead">Ask an assistant which calls fit a startup in Portugal, a musician in the UK or a research lab in Austria, what a loan guarantee in Germany requires, or what to apply to first from your own screening. It reads the same ledger as this site and links every answer to the official publisher page.</p>
+
+    <h2 id="what">What the plugin does</h2>
+    <ul>
+      <li><b>Finds calls.</b> It searches every current call in the ledger by country, type, audience and words, and links each one to the official page.</li>
+      <li><b>Explains a call.</b> What it requires, which document proves each condition, what the jargon means for you.</li>
+      <li><b>Screens a project.</b> Describe a company or a project; it runs the same rule-based screening as this site and shows the verdict and the rule for each call.</li>
+      <li><b>Saves a profile and sets the weekly alert.</b> Only after it shows you the profile and you say yes. New calls that fit are then emailed every Monday.</li>
+      <li><b>Helps you plan, write and score an application.</b> From your profile, the call and the criteria on the official page. You submit yourself.</li>
+    </ul>
+    <h2 id="cost">What it costs</h2>
+    <p>The plugin is part of Pro: one payment of {PLANS.solo.eur} euros (Solo, {PLANS.solo.profiles} saved profile) or {PLANS.team.eur} euros (Team, {PLANS.team.profiles} saved profiles), not a subscription. There are no credits and no fee per question, per draft or per application. The explaining, writing and scoring run on the assistant you already use, under your own ChatGPT or Claude plan; GrantLedger supplies the calls, the rules and your profile. Searching the ledger on this site stays free without Pro.</p>
 
     <h2>Past the jargon, without an intermediary</h2>
     <p>Finding a call is half of the work; reading it is the other half. Once the ledger is connected, the assistant explains in plain words what a call requires, which document proves each condition and what a term such as "de minimis" or "consortium" means for you. You stay in charge: you apply yourself, with the funder, and nobody takes a share of the funding.</p>
