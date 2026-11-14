@@ -98,7 +98,7 @@ export const en = {
   pro_features: "AI prefill, screening with readiness gaps and negative memos, re-run in one click, weekly Radar email per profile.",
   pro_email: "Email for your account and receipts",
   pro_pay: "Pay {eur} EUR once",
-  pro_note: "Card, SEPA, Bancontact, iDEAL and more, through Stripe. Businesses enter their VAT number at checkout; the invoice shows it. Refund within 14 days on request. Pay, get a sign-in link by email, done: no password.",
+  pro_note: "Card, SEPA, Bancontact, iDEAL and more, through Stripe. Businesses enter their VAT number at checkout; the invoice shows it. Refund within 14 days on request. Pay, get a sign-in link by email, done: no password. Pro lasts for as long as the service runs: see the terms.",
   pro_free_title: "What stays free",
   pro_free_text: "The whole ledger: search, filters, every call page with its official link, deadlines, version history, the coverage register. Pro pays for the model calls and the emails; nothing is taken away from the free side.",
   pro_signin: "Already paid? Sign in.",

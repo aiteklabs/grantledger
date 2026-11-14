@@ -99,7 +99,7 @@ export const nl: Dictionary = {
   pro_features: "AI-invulling, toetsing met gereedheidshiaten en negatieve memo's, opnieuw toetsen met één klik, wekelijkse Radar-e-mail per profiel.",
   pro_email: "E-mail voor uw account en bonnen",
   pro_pay: "Betaal {eur} EUR eenmalig",
-  pro_note: "Kaart, SEPA, Bancontact, iDEAL en meer, via Stripe. Bedrijven vullen hun btw-nummer in bij het afrekenen; de factuur toont het. Terugbetaling binnen 14 dagen op verzoek. Betalen, inloglink per e-mail ontvangen, klaar: geen wachtwoord.",
+  pro_note: "Kaart, SEPA, Bancontact, iDEAL en meer, via Stripe. Bedrijven vullen hun btw-nummer in bij het afrekenen; de factuur toont het. Terugbetaling binnen 14 dagen op verzoek. Betalen, inloglink per e-mail ontvangen, klaar: geen wachtwoord. Pro geldt zolang de dienst bestaat: zie de voorwaarden.",
   pro_free_title: "Wat gratis blijft",
   pro_free_text: "Het hele register: zoeken, filters, elke oproeppagina met officiële link, deadlines, versiegeschiedenis, dekkingsregister. Pro betaalt de modelaanroepen en e-mails; van de gratis kant wordt niets afgenomen.",
   pro_signin: "Al betaald? Log in.",
