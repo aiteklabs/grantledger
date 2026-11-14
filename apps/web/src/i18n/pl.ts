@@ -99,7 +99,7 @@ export const pl: Dictionary = {
   pro_features: "Wypełnianie przez AI, sprawdzenie z lukami gotowości i notatkami negatywnymi, ponowne sprawdzenie jednym kliknięciem, cotygodniowy e-mail Radar na profil.",
   pro_email: "E-mail do konta i rachunków",
   pro_pay: "Zapłać {eur} EUR jednorazowo",
-  pro_note: "Karta, SEPA, Bancontact, iDEAL i inne, przez Stripe. Firmy podają NIP przy płatności; faktura go pokazuje. Zwrot w ciągu 14 dni na żądanie. Płacisz, dostajesz link logowania e-mailem, gotowe: bez hasła.",
+  pro_note: "Karta, SEPA, Bancontact, iDEAL i inne, przez Stripe. Firmy podają NIP przy płatności; faktura go pokazuje. Zwrot w ciągu 14 dni na żądanie. Płacisz, dostajesz link logowania e-mailem, gotowe: bez hasła. Pro działa tak długo, jak działa serwis: zobacz regulamin.",
   pro_free_title: "Co pozostaje bezpłatne",
   pro_free_text: "Cały rejestr: wyszukiwanie, filtry, każda strona naboru z oficjalnym linkiem, terminy, historia wersji, rejestr pokrycia. Pro opłaca wywołania modelu i e-maile; części bezpłatnej nic nie ubywa.",
   pro_signin: "Już zapłacono? Zaloguj się.",

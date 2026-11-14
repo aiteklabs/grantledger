@@ -99,7 +99,7 @@ export const de: Dictionary = {
   pro_features: "KI-Vorausfüllen, Prüfung mit Lücken und Negativ-Memos, Neustart mit einem Klick, wöchentliche Radar-E-Mail pro Profil.",
   pro_email: "E-Mail für Konto und Belege",
   pro_pay: "{eur} EUR einmalig zahlen",
-  pro_note: "Karte, SEPA, Bancontact, iDEAL und mehr über Stripe. Unternehmen geben ihre USt-IdNr. beim Bezahlen an; die Rechnung zeigt sie. Erstattung innerhalb von 14 Tagen auf Anfrage. Zahlen, Anmeldelink per E-Mail erhalten, fertig: kein Passwort.",
+  pro_note: "Karte, SEPA, Bancontact, iDEAL und mehr über Stripe. Unternehmen geben ihre USt-IdNr. beim Bezahlen an; die Rechnung zeigt sie. Erstattung innerhalb von 14 Tagen auf Anfrage. Zahlen, Anmeldelink per E-Mail erhalten, fertig: kein Passwort. Pro gilt, solange der Dienst betrieben wird: siehe die Nutzungsbedingungen.",
   pro_free_title: "Was kostenlos bleibt",
   pro_free_text: "Das ganze Register: Suche, Filter, jede Aufrufseite mit amtlichem Link, Fristen, Versionsverlauf, Abdeckungsregister. Pro bezahlt die Modellaufrufe und E-Mails; der kostenlosen Seite wird nichts genommen.",
   pro_signin: "Schon bezahlt? Anmelden.",

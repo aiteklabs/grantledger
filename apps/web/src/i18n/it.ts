@@ -99,7 +99,7 @@ export const it: Dictionary = {
   pro_features: "Precompilazione con IA, analisi con lacune di preparazione e memo negativi, rilancio in un clic, email Radar settimanale per profilo.",
   pro_email: "Email per l'account e le ricevute",
   pro_pay: "Paga {eur} EUR una volta",
-  pro_note: "Carta, SEPA, Bancontact, iDEAL e altro, tramite Stripe. Le imprese inseriscono la partita IVA al pagamento; la fattura la riporta. Rimborso entro 14 giorni su richiesta. Pagate, ricevete un link di accesso via email, fatto: nessuna password.",
+  pro_note: "Carta, SEPA, Bancontact, iDEAL e altro, tramite Stripe. Le imprese inseriscono la partita IVA al pagamento; la fattura la riporta. Rimborso entro 14 giorni su richiesta. Pagate, ricevete un link di accesso via email, fatto: nessuna password. Pro dura finché il servizio esiste: vedere i termini.",
   pro_free_title: "Cosa resta gratis",
   pro_free_text: "Tutto il registro: ricerca, filtri, ogni scheda con il link ufficiale, scadenze, cronologia delle versioni, registro della copertura. Pro paga le chiamate al modello e le email; nulla viene tolto alla parte gratuita.",
   pro_signin: "Già pagato? Accedete.",
