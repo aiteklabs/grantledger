@@ -75,6 +75,17 @@ companies. Same five read-only tools, same sign-in, same tool descriptions as sc
 review ends or is cancelled. Do not change the MCP tool descriptions or the server instructions while a review
 is open.
 
+## Release notes (1.0.2)
+
+Three skills added to the package, next to `grantledger`: `plan-application` (readiness gaps to a dated work
+plan), `write-application` (application sections from the profile and the published form) and `score-draft`
+(the user's draft against the published evaluation criteria). The model work runs in the user's assistant; the
+server makes no model call for them. Same six read-only tools, same sign-in, same tool descriptions and server
+instructions as scanned for 1.0.0 and rescanned on 2026-11-13. Built on 2026-11-14, not uploaded: 1.0.1 was in
+review that day. Test prompts, each after "My screening: https://grantledger.eu/fit/<REVIEW_FIT>": "Plan my
+application to the first call that fits", "Write a first draft of my application to that call", "Score this
+draft against the criteria of that call" (with a pasted draft).
+
 ## Demo video
 
 Record two to three minutes in ChatGPT with the plugin connected: test cases 1, 3 and 4. Host the file at
