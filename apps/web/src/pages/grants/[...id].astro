@@ -14,23 +14,33 @@ const versions = await getVersions(env.DB, id);
 // A call past its deadline reads as closed even before the nightly crawl marks it.
 const status = g.closes_at && g.closes_at < new Date().toISOString() && g.status !== "closed" ? "closed" : g.status;
 const statusLabel = { open: d.status_open, forthcoming: d.status_forthcoming, closed: d.status_closed, unknown: d.status_unknown }[status] ?? status;
+// The English summary from the offline enrichment, when the record has one: it leads the page, the search snippet
+// and the structured data, so a reader who does not know the publisher's language sees what the call is.
+const brief = g.e_summary_en?.trim() || null;
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "MonetaryGrant",
   name: g.title,
-  description: (g.summary ?? "").slice(0, 500),
+  description: (brief ?? g.summary ?? "").slice(0, 500),
   url: `${env.SITE_URL}/grants/${encodeURI(g.id)}`,
   funder: g.funder_name ? { "@type": "Organization", name: g.funder_name } : undefined,
   amount: g.budget_total ? { "@type": "MonetaryAmount", value: g.budget_total, currency: g.currency ?? "EUR" } : undefined,
   sameAs: g.source_url,
 };
 ---
-<Base title={g.title} description={(g.summary ?? g.title).replace(/\s+/g, " ").slice(0, 160)} jsonLd={jsonLd} contentLang={g.title_lang}>
+<Base title={g.title} description={(brief ?? g.summary ?? g.title).replace(/\s+/g, " ").slice(0, 160)} jsonLd={jsonLd} contentLang={g.title_lang}>
   <div class="wrap detail">
     <article>
       <span class="kicker">{SOURCE_NAMES[g.source] ?? g.source} · <span class={`tag ${status}`}>{statusLabel}</span>{g.consortium && <> · <span class={`tag ${g.consortium === "single" ? "fit" : "not_yet"}`}>{g.consortium === "single" ? d.consortium_single : d.consortium_required}</span></>}</span>
       <h1 style="font-size:clamp(1.7rem,3.6vw,2.8rem)">{g.title}</h1>
       <p><a class="btn signal" href={g.source_url} rel="noopener" target="_blank">{d.grant_official} ↗</a></p>
+      {brief && (
+        <div class="callout" lang="en" style="margin:1.2rem 0">
+          <span class="kicker">In brief, in English</span>
+          <p style="margin:0.3rem 0 0.4rem">{brief}</p>
+          <p class="small muted" style="margin:0">Written by a model from the publisher's text. The official page is the authority. <a href="/ai-notice">How data is produced</a></p>
+        </div>
+      )}
       {g.summary ? <div class="summary" lang={g.title_lang}>{g.summary}</div> : <p class="muted">No summary published by the source. Read the official page.</p>}
       {g.documents.length > 0 && (
         <>

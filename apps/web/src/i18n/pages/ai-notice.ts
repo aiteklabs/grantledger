@@ -31,7 +31,7 @@ const en: AiNoticeContent = {
   prefillBold: "Prefilling your company form",
   prefillRest: "from a website, a PDF or a paragraph, when you ask for it. You see and edit every field before screening. Model: {model}.",
   enrichBold: "Enriching records offline.",
-  enrichRest: "When a funder publishes eligibility only as prose, the model extracts beneficiary types, sectors, regions, size and age limits and consortium requirement into a separate table, once per record. The matcher uses those fields only when the funder published none.",
+  enrichRest: "When a funder publishes eligibility only as prose, the model extracts beneficiary types, sectors, regions, size and age limits and consortium requirement into a separate table, once per record. The matcher uses those fields only when the funder published none. The same pass writes a two-sentence English summary of the call, shown on the record page under \"In brief, in English\" and used by the search.",
   noneTitle: "Where no model is used",
   noneItems: [
     "Collecting and normalising the ledger: code only, from official APIs and open data.",
@@ -56,7 +56,7 @@ const fr: AiNoticeContent = {
   prefillBold: "Préremplir votre formulaire d'entreprise",
   prefillRest: "à partir d'un site web, d'un PDF ou d'un paragraphe, lorsque vous le demandez. Vous voyez et modifiez chaque champ avant l'analyse. Modèle : {model}.",
   enrichBold: "Enrichir les fiches hors ligne.",
-  enrichRest: "Lorsqu'un financeur publie les conditions d'éligibilité uniquement sous forme de prose, le modèle extrait les types de bénéficiaires, les secteurs, les régions, les limites de taille et d'ancienneté et l'exigence de consortium dans une table séparée, une fois par fiche. Le moteur de correspondance n'utilise ces champs que lorsque le financeur n'en a publié aucun.",
+  enrichRest: "Lorsqu'un financeur publie les conditions d'éligibilité uniquement sous forme de prose, le modèle extrait les types de bénéficiaires, les secteurs, les régions, les limites de taille et d'ancienneté et l'exigence de consortium dans une table séparée, une fois par fiche. Le moteur de correspondance n'utilise ces champs que lorsque le financeur n'en a publié aucun. Le même passage rédige un résumé de l'appel en deux phrases en anglais, affiché sur la fiche sous « In brief, in English » et utilisé par la recherche.",
   noneTitle: "Où aucun modèle n'est utilisé",
   noneItems: [
     "Collecte et normalisation du registre : du code uniquement, à partir d'API officielles et de données ouvertes.",
@@ -81,7 +81,7 @@ const de: AiNoticeContent = {
   prefillBold: "Vorausfüllen Ihres Unternehmensformulars",
   prefillRest: "aus einer Website, einem PDF oder einem Absatz, wenn Sie es wünschen. Sie sehen und bearbeiten jedes Feld vor der Prüfung. Modell: {model}.",
   enrichBold: "Offline-Anreicherung von Datensätzen.",
-  enrichRest: "Wenn ein Fördergeber die Förderfähigkeit nur als Fließtext veröffentlicht, extrahiert das Modell Begünstigtentypen, Sektoren, Regionen, Größen- und Altersgrenzen sowie die Konsortiumsanforderung in eine separate Tabelle, einmal pro Datensatz. Der Abgleich verwendet diese Felder nur, wenn der Fördergeber keine veröffentlicht hat.",
+  enrichRest: "Wenn ein Fördergeber die Förderfähigkeit nur als Fließtext veröffentlicht, extrahiert das Modell Begünstigtentypen, Sektoren, Regionen, Größen- und Altersgrenzen sowie die Konsortiumsanforderung in eine separate Tabelle, einmal pro Datensatz. Der Abgleich verwendet diese Felder nur, wenn der Fördergeber keine veröffentlicht hat. Derselbe Durchlauf schreibt eine englische Zusammenfassung des Aufrufs in zwei Sätzen, die auf der Seite des Datensatzes unter „In brief, in English“ steht und von der Suche genutzt wird.",
   noneTitle: "Wo kein Modell eingesetzt wird",
   noneItems: [
     "Erfassung und Normalisierung des Registers: nur Code, aus amtlichen APIs und offenen Daten.",
@@ -106,7 +106,7 @@ const es: AiNoticeContent = {
   prefillBold: "Rellenar previamente su formulario de empresa",
   prefillRest: "a partir de un sitio web, un PDF o un párrafo, cuando usted lo solicita. Usted ve y edita cada campo antes del análisis. Modelo: {model}.",
   enrichBold: "Enriquecer fichas sin conexión.",
-  enrichRest: "Cuando un financiador publica la elegibilidad solo en prosa, el modelo extrae los tipos de beneficiario, sectores, regiones, límites de tamaño y antigüedad y el requisito de consorcio en una tabla separada, una vez por ficha. El motor de coincidencia usa esos campos solo cuando el financiador no publicó ninguno.",
+  enrichRest: "Cuando un financiador publica la elegibilidad solo en prosa, el modelo extrae los tipos de beneficiario, sectores, regiones, límites de tamaño y antigüedad y el requisito de consorcio en una tabla separada, una vez por ficha. El motor de coincidencia usa esos campos solo cuando el financiador no publicó ninguno. La misma pasada redacta un resumen de la convocatoria en dos frases en inglés, que se muestra en la ficha bajo «In brief, in English» y que utiliza la búsqueda.",
   noneTitle: "Dónde no se utiliza ningún modelo",
   noneItems: [
     "Recopilación y normalización del registro: solo código, a partir de API oficiales y datos abiertos.",
@@ -131,7 +131,7 @@ const it: AiNoticeContent = {
   prefillBold: "Precompilazione del modulo aziendale",
   prefillRest: "da un sito web, un PDF o un paragrafo, quando lo richiedete. Vedete e modificate ogni campo prima della verifica. Modello: {model}.",
   enrichBold: "Arricchimento delle schede offline.",
-  enrichRest: "Quando un finanziatore pubblica i criteri di ammissibilità solo in prosa, il modello estrae tipi di beneficiari, settori, regioni, limiti di dimensione e di età e il requisito di consorzio in una tabella separata, una volta per scheda. Il sistema di abbinamento usa quei campi solo quando il finanziatore non ne ha pubblicato alcuno.",
+  enrichRest: "Quando un finanziatore pubblica i criteri di ammissibilità solo in prosa, il modello estrae tipi di beneficiari, settori, regioni, limiti di dimensione e di età e il requisito di consorzio in una tabella separata, una volta per scheda. Il sistema di abbinamento usa quei campi solo quando il finanziatore non ne ha pubblicato alcuno. Lo stesso passaggio scrive un riassunto del bando in due frasi in inglese, mostrato nella scheda sotto «In brief, in English» e usato dalla ricerca.",
   noneTitle: "Dove non viene usato alcun modello",
   noneItems: [
     "Raccolta e normalizzazione del registro: solo codice, da API ufficiali e dati aperti.",
@@ -156,7 +156,7 @@ const pt: AiNoticeContent = {
   prefillBold: "Preenchimento prévio do seu formulário de empresa",
   prefillRest: "a partir de um site, de um PDF ou de um parágrafo, quando o pede. Vê e edita cada campo antes da análise. Modelo: {model}.",
   enrichBold: "Enriquecimento de registos offline.",
-  enrichRest: "Quando um financiador publica a elegibilidade apenas em prosa, o modelo extrai tipos de beneficiários, setores, regiões, limites de dimensão e idade e o requisito de consórcio para uma tabela separada, uma vez por registo. O motor de correspondência usa esses campos apenas quando o financiador não publicou nenhum.",
+  enrichRest: "Quando um financiador publica a elegibilidade apenas em prosa, o modelo extrai tipos de beneficiários, setores, regiões, limites de dimensão e idade e o requisito de consórcio para uma tabela separada, uma vez por registo. O motor de correspondência usa esses campos apenas quando o financiador não publicou nenhum. A mesma passagem escreve um resumo do aviso em duas frases em inglês, apresentado na ficha em «In brief, in English» e utilizado pela pesquisa.",
   noneTitle: "Onde não é usado nenhum modelo",
   noneItems: [
     "Recolha e normalização do registo: apenas código, a partir de API oficiais e dados abertos.",
@@ -181,7 +181,7 @@ const nl: AiNoticeContent = {
   prefillBold: "Uw bedrijfsformulier vooraf invullen",
   prefillRest: "vanuit een website, een PDF of een alinea, wanneer u daarom vraagt. U ziet en bewerkt elk veld vóór de screening. Model: {model}.",
   enrichBold: "Records offline verrijken.",
-  enrichRest: "Wanneer een financier de subsidiabiliteit alleen als lopende tekst publiceert, haalt het model begunstigdentypen, sectoren, regio's, grootte- en leeftijdsgrenzen en de consortiumvereiste eruit en zet ze in een aparte tabel, eenmaal per record. De matcher gebruikt die velden alleen wanneer de financier er geen heeft gepubliceerd.",
+  enrichRest: "Wanneer een financier de subsidiabiliteit alleen als lopende tekst publiceert, haalt het model begunstigdentypen, sectoren, regio's, grootte- en leeftijdsgrenzen en de consortiumvereiste eruit en zet ze in een aparte tabel, eenmaal per record. De matcher gebruikt die velden alleen wanneer de financier er geen heeft gepubliceerd. Dezelfde stap schrijft een Engelse samenvatting van de oproep in twee zinnen, die op de pagina van het record staat onder 'In brief, in English' en door de zoekfunctie wordt gebruikt.",
   noneTitle: "Waar geen model wordt gebruikt",
   noneItems: [
     "Verzamelen en normaliseren van het register: alleen code, uit officiële API's en open data.",
@@ -206,7 +206,7 @@ const pl: AiNoticeContent = {
   prefillBold: "Wstępne wypełnianie formularza firmy",
   prefillRest: "na podstawie strony internetowej, PDF-a lub akapitu, gdy o to poprosisz. Widzisz i edytujesz każde pole przed analizą. Model: {model}.",
   enrichBold: "Wzbogacanie rekordów offline.",
-  enrichRest: "Gdy instytucja finansująca publikuje kwalifikowalność wyłącznie jako prozę, model wyodrębnia typy beneficjentów, sektory, regiony, limity wielkości i wieku oraz wymóg konsorcjum do osobnej tabeli, raz na rekord. Mechanizm dopasowania używa tych pól tylko wtedy, gdy instytucja finansująca nie opublikowała żadnych.",
+  enrichRest: "Gdy instytucja finansująca publikuje kwalifikowalność wyłącznie jako prozę, model wyodrębnia typy beneficjentów, sektory, regiony, limity wielkości i wieku oraz wymóg konsorcjum do osobnej tabeli, raz na rekord. Mechanizm dopasowania używa tych pól tylko wtedy, gdy instytucja finansująca nie opublikowała żadnych. To samo przejście tworzy dwuzdaniowe streszczenie naboru po angielsku, widoczne na stronie rekordu pod nagłówkiem „In brief, in English” i używane przez wyszukiwarkę.",
   noneTitle: "Gdzie model nie jest używany",
   noneItems: [
     "Zbieranie i normalizacja rejestru: wyłącznie kod, z oficjalnych API i otwartych danych.",

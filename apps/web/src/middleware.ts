@@ -23,6 +23,12 @@ export const onRequest = defineMiddleware((context, next) => {
     url.hostname = "grantledger.eu";
     return Response.redirect(url.toString(), 301);
   }
+  // Plain HTTP on the canonical domain redirects to HTTPS, so no page exists at two addresses. Local runs of the
+  // built worker need `wrangler dev --upstream-protocol https`, or every request is taken for plain HTTP.
+  if (url.protocol === "http:" && url.hostname === "grantledger.eu") {
+    url.protocol = "https:";
+    return Response.redirect(url.toString(), 301);
+  }
   // A rewrite runs the middleware again on the new request, so the locale travels in a request header.
   const fromHeader = context.request.headers.get("x-grantledger-locale");
   if (fromHeader && locales.includes(fromHeader)) {
