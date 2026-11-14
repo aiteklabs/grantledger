@@ -16,7 +16,8 @@ export const prerender = false;
 // (the client gets a 401 with the resource metadata, runs the flow in src/lib/oauth.ts and comes back with a
 // bearer token), or the personal key as bearer or in the path (/mcp/<key>) for tools without OAuth.
 // Tools: search_grants, get_grant, get_fit, my_profiles, plus ChatGPT's pair search and fetch on the same data, all
-// read only, and save_profile, the one tool that writes: it needs an OAuth connection whose consent allowed it.
+// read only, and the two tools that write, screen_profile (a screening, no alert) and save_profile (a screening
+// kept as a profile, with the weekly email): both need an OAuth connection whose consent allowed it.
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER = { name: "grantledger", version: "1.0.0" };
@@ -24,6 +25,7 @@ const INSTRUCTIONS =
   "GrantLedger is the open ledger of public funding: grants, loans, guarantees and tax credits from official European sources. " +
   "Use search_grants to find calls (free text in any language, country code, status), get_grant for one full record, and get_fit when the user gives a grantledger.eu/fit/<id> link: " +
   "it returns their company profile and the calls screened for it with the rule each verdict relies on. Verdicts are deterministic rules, not model output. " +
+  "Use screen_profile to screen a company or a project the user describes without saving it, as many projects as they like. " +
   "Use save_profile only when the user asks to save a profile or to be alerted about new calls: ask them for every field, show the complete profile, and call it after their explicit yes. " +
   "Always link the official publisher page (source_url) and the grantledger page (url). Say when a call is closed or its deadline has passed. Never invent calls that are not in the results.";
 
@@ -40,6 +42,28 @@ const searchSchema = {
     page: { type: "integer", minimum: 1 },
     limit: { type: "integer", minimum: 5, maximum: 100, description: "Rows per page, default 20." },
   },
+};
+
+// The profile fields of screen_profile and save_profile. Mirrors ProfileForm in src/lib/profile-form.ts, which
+// validates the call; size and age bands are derived there.
+const profileProps = {
+  company_name: { type: "string", description: "Name of the company, the organisation or the person." },
+  country: { type: "string", description: "ISO 3166-1 alpha-2 country code where they are established (FR, DE, ES, ...), or EU for anywhere in Europe." },
+  region: { type: "string", description: "NUTS code of their region (ES30, FRK2, LT02). Leave out for anywhere in the country." },
+  entity_type: { type: "string", enum: ["company", "sme", "startup", "individual", "research_org", "public_body", "ngo", "other"] },
+  headcount: { type: "string", enum: ["1", "2to9", "10to49", "50to249", "250plus", "unknown"], description: "People working there." },
+  founded_year: { type: "integer", description: "Year of creation." },
+  company_age: { type: "string", enum: ["lt1", "1to3", "3to10", "gt10", "unknown"], description: "Age in years, only when the year of creation is not known." },
+  revenue: { type: "string", enum: ["none", "lt100k", "100kto1m", "1mto10m", "gt10m", "unknown"], description: "Yearly revenue in euros." },
+  stage: { type: "string", enum: ["idea", "pre_seed", "seed", "growth", "established", "unknown"] },
+  trl: { type: "integer", minimum: 1, maximum: 9, description: "Technology readiness level of the project, when it has one." },
+  ip_status: { type: "string", enum: ["none", "pending", "granted", "unknown"], description: "Patents or other registered rights." },
+  prior_funding: { type: "string", enum: ["none", "national", "eu", "both", "unknown"], description: "Public funding already received." },
+  partners: { type: "string", enum: ["none", "identified", "signed", "unknown"], description: "Partners for a joint project." },
+  sectors: { type: "array", items: { type: "string" }, maxItems: 5, description: "NACE Rev. 2 divisions, two digits each (62 for software, 10 for food, 90 for arts)." },
+  funding_types: { type: "array", items: { type: "string", enum: ["grant", "loan", "guarantee", "tax_credit", "voucher", "equity", "prize", "procurement"] }, description: "Kinds of funding they look for. Leave out for any." },
+  keywords: { type: "array", items: { type: "string" }, maxItems: 15, description: "What they do and what the project is about, 1 to 3 words each, in English." },
+  consortium_ok: { type: "boolean", description: "true when they accept calls that require a consortium." },
 };
 
 const TOOLS = [
@@ -90,35 +114,27 @@ const TOOLS = [
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
+    name: "screen_profile",
+    title: "Screen a profile",
+    description:
+      "Screen a company, an organisation, a person or one of their projects against the ledger, from what the user tells you in the chat, without saving it: no weekly email. " +
+      "Use it for a second project, a what-if, or when the account's saved profiles are full; there is no limit on the number of projects, only twenty screenings a day. " +
+      "Ask the user for every field you do not know; never guess a value, leave it out instead. Returns the screening id to pass to get_fit. " +
+      "The result is a snapshot of today's ledger: run it again later for a fresh one. The profile and its result are stored on the user's GrantLedger account, like a screening made on the site.",
+    inputSchema: { type: "object", properties: profileProps, required: ["country", "entity_type"] },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  {
     name: "save_profile",
     title: "Save a profile",
     description:
       "Save a profile for the signed-in account from what the user tells you in the chat. The profile is screened now and again every Monday, and new calls that fit are emailed to the account. " +
+      "The account's plan sets how many profiles it can save; for one more project without the email, use screen_profile. " +
       "Ask the user for every field you do not know; never guess a value, leave it out instead. Before calling, show the complete profile in the chat and wait for the user's explicit yes, then pass confirmed true. " +
       "Returns the screening id to pass to get_fit. It cannot change or remove a saved profile: the user does that on grantledger.eu/me.",
-    // Mirrors ProfileForm in src/lib/profile-form.ts, which validates the call; size and age bands are derived there.
     inputSchema: {
       type: "object",
-      properties: {
-        confirmed: { type: "boolean", description: "true only after the user saw the complete profile in the chat and said yes." },
-        company_name: { type: "string", description: "Name of the company, the organisation or the person." },
-        country: { type: "string", description: "ISO 3166-1 alpha-2 country code where they are established (FR, DE, ES, ...), or EU for anywhere in Europe." },
-        region: { type: "string", description: "NUTS code of their region (ES30, FRK2, LT02). Leave out for anywhere in the country." },
-        entity_type: { type: "string", enum: ["company", "sme", "startup", "individual", "research_org", "public_body", "ngo", "other"] },
-        headcount: { type: "string", enum: ["1", "2to9", "10to49", "50to249", "250plus", "unknown"], description: "People working there." },
-        founded_year: { type: "integer", description: "Year of creation." },
-        company_age: { type: "string", enum: ["lt1", "1to3", "3to10", "gt10", "unknown"], description: "Age in years, only when the year of creation is not known." },
-        revenue: { type: "string", enum: ["none", "lt100k", "100kto1m", "1mto10m", "gt10m", "unknown"], description: "Yearly revenue in euros." },
-        stage: { type: "string", enum: ["idea", "pre_seed", "seed", "growth", "established", "unknown"] },
-        trl: { type: "integer", minimum: 1, maximum: 9, description: "Technology readiness level of the project, when it has one." },
-        ip_status: { type: "string", enum: ["none", "pending", "granted", "unknown"], description: "Patents or other registered rights." },
-        prior_funding: { type: "string", enum: ["none", "national", "eu", "both", "unknown"], description: "Public funding already received." },
-        partners: { type: "string", enum: ["none", "identified", "signed", "unknown"], description: "Partners for a joint project." },
-        sectors: { type: "array", items: { type: "string" }, maxItems: 5, description: "NACE Rev. 2 divisions, two digits each (62 for software, 10 for food, 90 for arts)." },
-        funding_types: { type: "array", items: { type: "string", enum: ["grant", "loan", "guarantee", "tax_credit", "voucher", "equity", "prize", "procurement"] }, description: "Kinds of funding they look for. Leave out for any." },
-        keywords: { type: "array", items: { type: "string" }, maxItems: 15, description: "What they do and what the project is about, 1 to 3 words each, in English." },
-        consortium_ok: { type: "boolean", description: "true when they accept calls that require a consortium." },
-      },
+      properties: { confirmed: { type: "boolean", description: "true only after the user saw the complete profile in the chat and said yes." }, ...profileProps },
       required: ["confirmed", "country", "entity_type"],
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -149,6 +165,9 @@ const grantText = (g: GrantJson) =>
   [g.title, g.summary_en, g.summary, `Funder: ${g.funder_name ?? "?"} (${g.country_name})`, `Types: ${g.funding_type_labels.join(", ")}`, `Beneficiaries: ${g.beneficiary_types.join(", ")}`, `Amount: ${g.amount_min ?? "?"} to ${g.amount_max ?? "?"} ${g.currency ?? ""}`, `Status: ${g.status}, deadline ${g.closes_at ?? "none stated"}`, `Official page: ${g.source_url}`]
     .filter(Boolean)
     .join("\n");
+
+// Screenings one account can start from the chat in a day, saved or not.
+const SCREENINGS_PER_DAY = 20;
 
 // The tool arguments as the form the site posts, so one parser validates both and derives the same fields.
 function profileFormData(args: Record<string, unknown>): FormData {
@@ -211,33 +230,42 @@ async function callTool(name: string, args: Record<string, unknown>, caller: Acc
       const j = grantJson(g, site);
       return { result: { id: j.id, title: j.title, text: grantText(j), url: j.url, metadata: { kind: "grant", country: j.country, status: j.status, closes_at: j.closes_at, source_url: j.source_url } } };
     }
+    case "screen_profile":
     case "save_profile": {
+      const saving = name === "save_profile";
       // The personal key and the admin token carry no consent to write, and neither does a connection made when
       // the consent page still said read only.
-      if (caller === "admin" || !(await canWrite())) return { result: null, error: `This connection is read only. To save a profile from the chat, the user disconnects GrantLedger in the assistant and connects it again. The profile can also be saved on ${site}/find` };
-      if (args.confirmed !== true) return { result: null, error: "Not saved. Show the complete profile to the user, wait for their yes, then call again with confirmed true." };
-      if (!args.country || !args.entity_type) return { result: null, error: "Not saved. country and entity_type are required: ask the user." };
+      if (caller === "admin" || !(await canWrite())) return { result: null, error: `This connection is read only. To screen or save a profile from the chat, the user disconnects GrantLedger in the assistant and connects it again. A profile can also be screened and saved on ${site}/find` };
+      if (saving && args.confirmed !== true) return { result: null, error: "Not saved. Show the complete profile to the user, wait for their yes, then call again with confirmed true." };
+      if (!args.country || !args.entity_type) return { result: null, error: "Nothing done. country and entity_type are required: ask the user." };
       let profile: ReturnType<typeof parseProfileForm>;
       try {
         profile = parseProfileForm(profileFormData(args));
       } catch (err) {
         // One line per field, so the assistant can ask the user again.
         const detail = err instanceof ZodError ? err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") : "invalid";
-        return { result: null, error: `Not saved. Invalid profile. ${detail.slice(0, 400)}` };
+        return { result: null, error: `Nothing done. Invalid profile. ${detail.slice(0, 400)}` };
       }
-      const done = (fitId: string) => ({ result: { saved: true, name: profile.company_name, fit_id: fitId, fit_url: `${site}/fit/${fitId}`, manage_url: `${site}/me` } });
-      const profiles = await listProfiles(env.DB, caller.email);
-      // The same profile again, a retry for instance, is the one already saved.
-      const same = profiles.find((p) => p.form === JSON.stringify(profile));
-      if (same) return done(same.fit_check_id);
-      const full = { result: null, error: `Not saved. This account already holds ${profiles.length} saved profile(s), the most its plan allows. The user can remove one on ${site}/me` };
-      // Checked before screening, so an account at its limit does not pile up screenings.
-      if (profiles.length >= profileLimit(caller)) return full;
+      // saved says whether the profile gets the weekly email; an unsaved screening is a snapshot.
+      const done = (fitId: string, saved: boolean) => ({ result: { saved, name: profile.company_name, fit_id: fitId, fit_url: `${site}/fit/${fitId}`, ...(saved ? { manage_url: `${site}/me` } : {}) } });
+      const full = (n: number) => ({ result: null, error: `Not saved. This account already holds ${n} saved profile(s), the most its plan allows. Use screen_profile to screen this one without the weekly email, or the user removes a profile on ${site}/me` });
+      if (saving) {
+        const profiles = await listProfiles(env.DB, caller.email);
+        // The same profile again, a retry for instance, is the one already saved.
+        const same = profiles.find((p) => p.form === JSON.stringify(profile));
+        if (same) return done(same.fit_check_id, true);
+        // Checked before screening, so an account at its limit does not pile up screenings.
+        if (profiles.length >= profileLimit(caller)) return full(profiles.length);
+      }
+      // An assistant in a loop must not fill the ledger with screenings.
+      const recent = await env.DB.prepare("SELECT COUNT(*) AS n FROM fit_checks WHERE contact_email = ? AND user_agent = 'mcp' AND created_at > ?").bind(caller.email, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).first<{ n: number }>();
+      if ((recent?.n ?? 0) >= SCREENINGS_PER_DAY) return { result: null, error: `Nothing done. ${SCREENINGS_PER_DAY} screenings from the chat in a day is the limit for one account. Earlier results stay readable with get_fit, and the user can screen on ${site}/find` };
       const id = crypto.randomUUID();
       await screenProfile(env.DB, { id, profile, existing: false, email: caller.email, ip_hash: null, user_agent: "mcp", started: Date.now() });
+      if (!saving) return done(id, false);
       const saved = await saveProfile(env.DB, caller, id);
-      if (saved === "full") return full;
-      return saved ? done(id) : { result: null, error: "Not saved. The screening did not finish; try again." };
+      if (saved === "full") return full(profileLimit(caller));
+      return saved ? done(id, true) : { result: null, error: "Not saved. The screening did not finish; try again." };
     }
     default:
       return { result: null, error: `Unknown tool: ${name}` };

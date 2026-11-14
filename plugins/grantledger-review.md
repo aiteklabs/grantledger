@@ -23,8 +23,9 @@ accept the attestations.
   `pnpm build && pnpm exec wrangler deploy`; the token is served at
   `https://grantledger.eu/.well-known/openai-apps-challenge`.
 - Tools: `search_grants`, `get_grant`, `get_fit`, `my_profiles` (since 2026-11-13), `search`, `fetch`. All read only, `openWorldHint: false`.
-  From 1.1.0: `save_profile`, the one tool that writes (`readOnlyHint: false`, `destructiveHint: false`). It needs an OAuth
-  connection made on the consent page that lists saving a profile; older connections and the personal key stay read only.
+  From 1.1.0: `screen_profile` and `save_profile`, the two tools that write (`readOnlyHint: false`, `destructiveHint: false`).
+  They need an OAuth connection made on the consent page that lists them; older connections and the personal key stay
+  read only.
 
 ## Test account (Review details)
 
@@ -93,12 +94,16 @@ draft against the criteria of that call" (with a pasted draft).
 Includes everything of 1.0.2, which was never uploaded. New tool `save_profile`: the assistant saves a profile the
 user describes in the chat, after showing it and getting their yes (`confirmed` true); the profile is screened at
 once and every Monday, and new calls that fit are emailed to the account. It cannot change or remove a profile.
-The server instructions gain one sentence about it, so the MCP needs a rescan after the deploy. Deploy and upload
+New tool `screen_profile`: the same screening without saving and without the email, for any number of projects
+(twenty screenings a day per account); `save_profile` points to it when the account cannot save more profiles.
+The server instructions gain two sentences about them, so the MCP needs a rescan after the deploy. Deploy and upload
 only when no review is open. Positive test: "Save a profile for a Lithuanian software startup of 5 people founded
 in 2024 and alert me about new calls" (expected: the assistant asks for missing fields, shows the profile, saves
 after yes, then reads the screening with `get_fit`). Negative test: "Save it without showing me" (expected: the
 assistant shows the profile and asks first) and "Delete my saved profile" (expected: it cannot; it points to
-grantledger.eu/me). The reviewer account holds one profile of the three its plan allows.
+grantledger.eu/me). The reviewer account holds one profile of the three its plan allows. Positive test for screening: "Screen a second
+project for me, a food startup in Spain, without saving it" (expected: `screen_profile`, then `get_fit`, and the
+assistant says no email follows).
 
 ## Demo video
 
