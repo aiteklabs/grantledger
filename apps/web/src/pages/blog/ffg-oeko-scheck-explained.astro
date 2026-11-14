@@ -1,0 +1,52 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="ffg-oeko-scheck-explained">
+  <p class="lead">The Öko-Scheck of FFG, the Austrian Research Promotion Agency, is a small grant for SMEs and non-profit organisations that want to develop a climate- or environment-friendly innovation: up to 12,000 euros, 80 percent of project costs of at most 15,000 euros. The 2026 call closed on 5 October 2026. When there are more applications than budget, the winners are drawn by lot.</p>
+
+  <h2>Who can apply</h2>
+  <ul>
+    <li>Small and medium-sized enterprises of every sector and almost every legal form (not a GesbR). Linked companies count as one.</li>
+    <li>Non-profit organisations: NPOs, NGOs and associations.</li>
+    <li>Sole traders need a commercial register number or a VAT identification number.</li>
+  </ul>
+  <p><b>Excluded:</b> large enterprises, start-ups still being founded, universities and universities of applied sciences, research institutions outside universities, municipalities and schools. An organisation that already received an Öko-Scheck cannot get a second one.</p>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Maximum grant</td><td>12,000 euros per project, not repaid</td></tr>
+      <tr><td>Share of costs</td><td>80 percent of eligible costs of at most 15,000 euros</td></tr>
+      <tr><td>Project length</td><td>At most 12 months, with no extension</td></tr>
+      <tr><td>Eligible costs</td><td>Personnel, and third-party costs up to 30 percent of the total</td></tr>
+      <tr><td>Partners</td><td>Not required</td></tr>
+      <tr><td>State aid</td><td>Granted as <a href="/blog/de-minimis-aid-explained">de minimis aid</a></td></tr>
+      <tr><td>2026 call</td><td>Open from 1 September to 5 October 2026, 12:00; now closed</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What the project can be</h2>
+  <p>FFG funds three kinds of work: analysing a problem or a system and researching it, designing and developing a solution, and running a pilot test of a new business model, service or product. FFG states that it raised the bar on innovation content for the 2026 call after an evaluation of the programme.</p>
+  <p>External know-how on innovation or sustainability can be paid from the grant, up to 30 percent of the total costs. Whoever does that work must be named in the application and again in the final accounts. Help that only handles the online submission is not eligible.</p>
+
+  <h2>Selection: a draw, not a race</h2>
+  <p>You submit during the window of the call. If the applications exceed the budget, FFG draws the funded projects at random and keeps a waiting list. Applying on the first day gives no advantage. All decisions are taken by the end of the year.</p>
+
+  <h2>How to apply</h2>
+  <ol>
+    <li>Wait for the next call on the FFG page: the Öko-Scheck opens for a fixed window, not all year.</li>
+    <li>Prepare the project and the company size details.</li>
+    <li>Submit online in eCall, the FFG portal, before the deadline. There is no paper route.</li>
+  </ol>
+
+  <LiveCalls heading="FFG calls in the ledger today" q="FFG" country="AT" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>FFG, Öko-Scheck 2026 call page: who is funded, amounts, costs, dates, selection, eCall, de minimis. <a href="https://www.ffg.at/ausschreibung/oeko-scheck-2026" rel="noopener">ffg.at</a></li>
+    <li>FFG, Öko-Scheck programme page: purpose and target groups. <a href="https://www.ffg.at/oekoscheck" rel="noopener">ffg.at</a></li>
+  </ul>
+</Article>
