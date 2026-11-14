@@ -16,6 +16,7 @@ const [checks, runs, stats, enrichedRow] = await Promise.all([listFitChecks(env.
 const enriched = enrichedRow?.n ?? 0;
 const spend = await monthSpend(env.DB);
 const pro = await getProStats(env.DB);
+const announced = Astro.url.searchParams.get("announced");
 ---
 <Base title="Admin" noindex>
   <div class="wrap" style="padding-top:2.5rem">
@@ -56,6 +57,19 @@ const pro = await getProStats(env.DB);
       <div><b class="small">Sectors</b><ul class="small" style="margin:0.3rem 0 0;padding-left:1rem">{pro.sectors.map(([k, n]) => <li><span class="mono">{k}</span> {NACE_BY_CODE.get(k)?.name ?? ""} · {n}</li>)}</ul></div>
       <div><b class="small">Keywords</b><ul class="small" style="margin:0.3rem 0 0;padding-left:1rem;columns:2">{pro.keywords.map(([k, n]) => <li>{k} · {n}</li>)}</ul></div>
     </div>
+
+    <h3 id="announce" style="margin-top:2rem">Message to the paid accounts</h3>
+    <p class="small muted">One plain email to every paid account, for a change in what Pro does. Blank line between paragraphs; addresses become links. Accounts on this site's own domain and the reviewer account are skipped. Send a test first.</p>
+    {announced !== null && <p class="callout" style="border-left-color:var(--moss)">{announced} sent, {Astro.url.searchParams.get("failed") ?? "0"} failed ({Astro.url.searchParams.get("mode") === "all" ? "every paid account" : "test"}).</p>}
+    <form method="post" action="/api/admin/announce" class="form">
+      <div class="field"><label for="ann-subject">Subject</label><input type="text" id="ann-subject" name="subject" required maxlength="120" /></div>
+      <div class="field"><label for="ann-body">Body</label><textarea id="ann-body" name="body" rows="14" required></textarea></div>
+      <div class="field"><label for="ann-test">Test address</label><input type="email" id="ann-test" name="test" autocomplete="email" /></div>
+      <div>
+        <button class="btn ghost" type="submit" name="mode" value="test">Send test</button>
+        <button class="btn" type="submit" name="mode" value="all" style="margin-left:0.6rem" onclick="return confirm('Send this message to every paid account now?')">Send to every paid account</button>
+      </div>
+    </form>
 
     <h2 style="margin-top:3rem">Fit checks ({checks.length})</h2>
     <form method="post" action="/api/admin/delete-fit" onsubmit="return confirm('Delete every fit check and uploaded file? This cannot be undone.')" style="margin:0 0 0.8rem">

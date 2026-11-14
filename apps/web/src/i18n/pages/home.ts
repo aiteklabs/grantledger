@@ -33,7 +33,7 @@ const en: Content = {
   },
   ai_kicker: "Assistants · Pro",
   ai_title: "Past the jargon, with ChatGPT or Claude.",
-  ai_text: "Connect the ledger to your assistant through MCP. It searches the same official calls, reads your screening and explains in plain words what a call requires, which document proves each condition and what to apply to first. You apply yourself, with the funder.",
+  ai_text: "Connect the ledger to your assistant through MCP. It searches the same official calls, reads your screening and explains in plain words what a call requires, which document proves each condition and what to apply to first. It also screens a project you describe, saves a profile after your yes, and helps you plan, write and score an application. You apply yourself, with the funder.",
   ai_cta: "Connect an assistant",
   faq_title: "Common questions",
   faq: [
@@ -61,7 +61,7 @@ const fr: Content = {
   },
   ai_kicker: "Assistants · Pro",
   ai_title: "Passer la barrière du jargon, avec ChatGPT ou Claude.",
-  ai_text: "Connectez le registre à votre assistant via MCP. Il cherche dans les mêmes appels officiels, lit votre analyse et explique en mots simples ce qu'un appel exige, quel document prouve chaque condition et où candidater en premier. Vous candidatez vous-même, auprès du financeur.",
+  ai_text: "Connectez le registre à votre assistant via MCP. Il cherche dans les mêmes appels officiels, lit votre analyse et explique en mots simples ce qu'un appel exige, quel document prouve chaque condition et où candidater en premier. Il analyse aussi un projet que vous décrivez, enregistre un profil après votre accord et vous aide à planifier, rédiger et noter une candidature. Vous candidatez vous-même, auprès du financeur.",
   ai_cta: "Connecter un assistant",
   faq_title: "Questions fréquentes",
   faq: [
@@ -89,7 +89,7 @@ const de: Content = {
   },
   ai_kicker: "Assistenten · Pro",
   ai_title: "Durch die Fachsprache, mit ChatGPT oder Claude.",
-  ai_text: "Verbinden Sie das Register über MCP mit Ihrem Assistenten. Er durchsucht dieselben amtlichen Aufrufe, liest Ihre Prüfung und erklärt in einfachen Worten, was ein Aufruf verlangt, welches Dokument jede Bedingung belegt und wo Sie zuerst einreichen sollten. Den Antrag stellen Sie selbst, beim Fördergeber.",
+  ai_text: "Verbinden Sie das Register über MCP mit Ihrem Assistenten. Er durchsucht dieselben amtlichen Aufrufe, liest Ihre Prüfung und erklärt in einfachen Worten, was ein Aufruf verlangt, welches Dokument jede Bedingung belegt und wo Sie zuerst einreichen sollten. Er prüft auch ein Projekt, das Sie beschreiben, speichert ein Profil nach Ihrem Ja und hilft Ihnen, einen Antrag zu planen, zu schreiben und zu bewerten. Den Antrag stellen Sie selbst, beim Fördergeber.",
   ai_cta: "Assistenten verbinden",
   faq_title: "Häufige Fragen",
   faq: [
@@ -117,7 +117,7 @@ const es: Content = {
   },
   ai_kicker: "Asistentes · Pro",
   ai_title: "Más allá de la jerga, con ChatGPT o Claude.",
-  ai_text: "Conecte el registro a su asistente mediante MCP. Busca en las mismas convocatorias oficiales, lee su análisis y explica con palabras sencillas qué exige una convocatoria, qué documento acredita cada condición y a cuál presentarse primero. Usted presenta la solicitud, ante el financiador.",
+  ai_text: "Conecte el registro a su asistente mediante MCP. Busca en las mismas convocatorias oficiales, lee su análisis y explica con palabras sencillas qué exige una convocatoria, qué documento acredita cada condición y a cuál presentarse primero. También analiza un proyecto que usted describa, guarda un perfil tras su sí y le ayuda a planificar, redactar y puntuar una solicitud. Usted presenta la solicitud, ante el financiador.",
   ai_cta: "Conectar un asistente",
   faq_title: "Preguntas frecuentes",
   faq: [
@@ -145,7 +145,7 @@ const it: Content = {
   },
   ai_kicker: "Assistenti · Pro",
   ai_title: "Oltre il gergo, con ChatGPT o Claude.",
-  ai_text: "Collegate il registro al vostro assistente tramite MCP. Cerca negli stessi bandi ufficiali, legge la vostra analisi e spiega con parole semplici che cosa richiede un bando, quale documento dimostra ogni condizione e a quale candidarsi per primo. La domanda la presentate voi, presso il finanziatore.",
+  ai_text: "Collegate il registro al vostro assistente tramite MCP. Cerca negli stessi bandi ufficiali, legge la vostra analisi e spiega con parole semplici che cosa richiede un bando, quale documento dimostra ogni condizione e a quale candidarsi per primo. Analizza anche un progetto che descrivete, salva un profilo dopo il vostro sì e vi aiuta a pianificare, scrivere e valutare una domanda. La domanda la presentate voi, presso il finanziatore.",
   ai_cta: "Collegare un assistente",
   faq_title: "Domande frequenti",
   faq: [
@@ -173,7 +173,7 @@ const pt: Content = {
   },
   ai_kicker: "Assistentes · Pro",
   ai_title: "Para lá do jargão, com o ChatGPT ou o Claude.",
-  ai_text: "Ligue o registo ao seu assistente através de MCP. Ele pesquisa nos mesmos avisos oficiais, lê a sua análise e explica por palavras simples o que um aviso exige, que documento comprova cada condição e a qual se candidatar primeiro. A candidatura é feita por si, junto do financiador.",
+  ai_text: "Ligue o registo ao seu assistente através de MCP. Ele pesquisa nos mesmos avisos oficiais, lê a sua análise e explica por palavras simples o que um aviso exige, que documento comprova cada condição e a qual se candidatar primeiro. Também analisa um projeto que descreva, guarda um perfil depois do seu sim e ajuda-o a planear, redigir e pontuar uma candidatura. A candidatura é feita por si, junto do financiador.",
   ai_cta: "Ligar um assistente",
   faq_title: "Perguntas frequentes",
   faq: [
@@ -201,7 +201,7 @@ const nl: Content = {
   },
   ai_kicker: "Assistenten · Pro",
   ai_title: "Voorbij het jargon, met ChatGPT of Claude.",
-  ai_text: "Koppel het register via MCP aan uw assistent. Die doorzoekt dezelfde officiële oproepen, leest uw toets en legt in gewone woorden uit wat een oproep vraagt, welk document elke voorwaarde aantoont en waar u het eerst kunt aanvragen. U vraagt zelf aan, bij de financier.",
+  ai_text: "Koppel het register via MCP aan uw assistent. Die doorzoekt dezelfde officiële oproepen, leest uw toets en legt in gewone woorden uit wat een oproep vraagt, welk document elke voorwaarde aantoont en waar u het eerst kunt aanvragen. Die toetst ook een project dat u beschrijft, slaat een profiel op na uw ja en helpt u een aanvraag te plannen, te schrijven en te scoren. U vraagt zelf aan, bij de financier.",
   ai_cta: "Een assistent koppelen",
   faq_title: "Veelgestelde vragen",
   faq: [
@@ -229,7 +229,7 @@ const pl: Content = {
   },
   ai_kicker: "Asystenci · Pro",
   ai_title: "Przez żargon, z ChatGPT lub Claude.",
-  ai_text: "Połącz rejestr ze swoim asystentem przez MCP. Przeszukuje te same oficjalne nabory, czyta Twoje sprawdzenie i wyjaśnia prostymi słowami, czego wymaga nabór, jaki dokument potwierdza każdy warunek i gdzie złożyć wniosek najpierw. Wniosek składasz samodzielnie, u grantodawcy.",
+  ai_text: "Połącz rejestr ze swoim asystentem przez MCP. Przeszukuje te same oficjalne nabory, czyta Twoje sprawdzenie i wyjaśnia prostymi słowami, czego wymaga nabór, jaki dokument potwierdza każdy warunek i gdzie złożyć wniosek najpierw. Sprawdza też projekt, który opiszesz, zapisuje profil po Twoim tak i pomaga zaplanować, napisać i ocenić wniosek. Wniosek składasz samodzielnie, u grantodawcy.",
   ai_cta: "Połącz asystenta",
   faq_title: "Częste pytania",
   faq: [

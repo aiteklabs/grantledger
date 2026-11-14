@@ -3,9 +3,11 @@ import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
 import { PLANS, currentAccount } from "~/lib/account";
 import { t } from "~/i18n";
+import { pro } from "~/i18n/pages/pro";
 export const prerender = false;
 
 const d = t(Astro.locals.locale);
+const c = pro[Astro.locals.locale] ?? pro.en!;
 const account = await currentAccount(Astro.request, env);
 const fit = Astro.url.searchParams.get("fit") ?? "";
 const from = Astro.url.searchParams.get("from") ?? "";
@@ -43,6 +45,15 @@ const reasons: Record<string, string> = { prefill: d.pro_reason_prefill, find: d
       ))}
     </div>
     <p class="small muted">{d.pro_note}</p>
+
+    <h2>{c.what_title}</h2>
+    <div class="steps" style="margin-top:1.5rem">
+      {c.what.map((w, i) => (
+        <div class="step"><h3>{w.title}</h3><p>{w.text}</p>{i === c.what.length - 1 && <a href="/assistant">{c.assistant_cta}</a>}</div>
+      ))}
+    </div>
+    <h2>{c.not_title}</h2>
+    <p>{c.not_text}</p>
 
     <h2>{d.pro_free_title}</h2>
     <p>{d.pro_free_text}</p>
