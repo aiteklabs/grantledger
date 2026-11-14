@@ -1,7 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
-import { POSTS, postPath } from "~/lib/blog";
+import { POSTS, postImage, postPath } from "~/lib/blog";
 import { fmtDate } from "~/lib/format";
 export const prerender = false;
 
@@ -20,13 +20,21 @@ const jsonLd = {
     <p class="lead">Public funding is published country by country, in the language of each country. These guides explain the method, the EU rules and the national schemes people search for most, in plain English, from the official sources, with the calls that are open today.</p>
     <ul class="ledger" style="margin-top:2rem">
       {POSTS.map((p) => (
-        <li style="padding:1.1rem 0">
-          <span class="kicker">{p.kicker} · {fmtDate(p.published)}</span>
-          <h2 style="font-size:1.4rem;margin:0.3rem 0"><a href={postPath(p)}>{p.title}</a></h2>
-          <p style="margin:0">{p.description}</p>
+        <li class="post">
+          <a href={postPath(p)} tabindex="-1" aria-hidden="true"><img src={postImage(p)} alt="" width="1600" height="900" loading="lazy" /></a>
+          <div>
+            <span class="kicker">{p.kicker} · {fmtDate(p.published)}</span>
+            <h2 style="font-size:1.4rem;margin:0.3rem 0"><a href={postPath(p)}>{p.title}</a></h2>
+            <p style="margin:0">{p.description}</p>
+          </div>
         </li>
       ))}
     </ul>
     <p style="margin-top:2rem"><a class="btn" href="/grants">Search the ledger</a> <a class="btn ghost" href="/countries" style="margin-left:0.6rem">Browse by country</a></p>
   </div>
 </Base>
+<style>
+  .post { display: grid; grid-template-columns: 240px 1fr; gap: 1.2rem; align-items: center; padding: 1.1rem 0; }
+  .post img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--line); }
+  @media (max-width: 640px) { .post { grid-template-columns: 1fr; } }
+</style>
