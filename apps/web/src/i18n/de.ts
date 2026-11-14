@@ -53,6 +53,7 @@ export const de: Dictionary = {
   grants_all: "Alle Förderungen",
   grants_matching: "Förderungen zu",
   grants_results: "Ergebnisse",
+  grants_broadened: "Weniger als fünf Aufrufe enthalten alle Wörter Ihrer Suche. Diese enthalten mindestens eines davon, der beste Treffer zuerst.",
   grants_page: "Seite",
   grants_of: "von",
   grant_official: "Amtliche Aufrufseite",

@@ -53,6 +53,7 @@ export const pl: Dictionary = {
   grants_all: "Wszystkie dotacje",
   grants_matching: "Dotacje pasujące do",
   grants_results: "wyników",
+  grants_broadened: "Mniej niż pięć naborów zawiera wszystkie słowa wyszukiwania. Te zawierają co najmniej jedno z nich, od najlepiej dopasowanego.",
   grants_page: "strona",
   grants_of: "z",
   grant_official: "Oficjalna strona naboru",

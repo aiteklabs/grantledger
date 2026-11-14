@@ -53,6 +53,7 @@ export const nl: Dictionary = {
   grants_all: "Alle subsidies",
   grants_matching: "Subsidies passend bij",
   grants_results: "resultaten",
+  grants_broadened: "Minder dan vijf oproepen bevatten alle woorden van uw zoekopdracht. Deze bevatten er minstens één van, de beste treffer eerst.",
   grants_page: "pagina",
   grants_of: "van",
   grant_official: "Officiële oproeppagina",

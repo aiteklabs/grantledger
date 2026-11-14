@@ -18,6 +18,8 @@ export const GET: APIRoute = async ({ request, url }) => {
     page: result.page,
     per: result.pageSize,
     pages: Math.max(1, Math.ceil(result.total / result.pageSize)),
+    // True when fewer than five calls hold every word of q: the items then hold at least one, best match first.
+    broadened: result.broadened,
     items: result.items.map((g) => grantJson(g, env.SITE_URL)),
   };
   return new Response(JSON.stringify(body, null, 2), { headers: { ...JSON_HEADERS, "cache-control": "private, max-age=300" } });

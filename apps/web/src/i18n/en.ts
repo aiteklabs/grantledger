@@ -52,6 +52,7 @@ export const en = {
   grants_all: "All grants",
   grants_matching: "Grants matching",
   grants_results: "results",
+  grants_broadened: "Fewer than five calls contain every word of your search. These contain at least one of them, best match first.",
   grants_page: "page",
   grants_of: "of",
   grant_official: "Official call page",

@@ -156,6 +156,10 @@
                     "pages": {
                       "type": "integer"
                     },
+                    "broadened": {
+                      "type": "boolean",
+                      "description": "True when fewer than five calls contain every word of q: the items then contain at least one of them, best match first."
+                    },
                     "items": {
                       "type": "array",
                       "items": {
