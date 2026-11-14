@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "grantledger",
-  "version": "1.1.0",
-  "description": "Public funding across Europe for companies, artists, researchers and non-profits: search the open ledger of grants, loans, guarantees and tax credits, reason over your GrantLedger Pro screening result, then plan, write and score an application for a call.",
+  "version": "1.2.0",
+  "description": "Public funding across Europe for companies, artists, researchers and non-profits: search the open ledger of grants, loans, guarantees and tax credits, reason over your GrantLedger Pro screening result, then plan, write and score an application for a call, and find consortium partners for it.",
   "author": {
     "name": "Aitek Labs",
     "url": "https://aiteklabs.com"
@@ -37,6 +37,7 @@
           "Plan an application from the readiness gaps, counted back from the deadline",
           "Draft application sections from your profile and the published form",
           "Score your draft against the published evaluation criteria of the call",
+          "Find where consortia look for partners for an EU call and draft your partner offer",
           "Screen any project you describe in the chat against the ledger",
           "Save a profile you confirm in the chat, so new calls that fit reach you by email"
         ],
