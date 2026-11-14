@@ -64,12 +64,12 @@ export const EUROPE = new Set([...EU_MEMBERS, "NO", "IS", "LI", "CH", "GB", "UK"
 
 // Countries with a national source already crawled. Everything else gets EU-wide programmes only.
 export const NATIONAL_COVERAGE: Record<string, string> = {
-  ES: "BDNS", FR: "aides-entreprises.fr", US: "Grants.gov", NL: "RVO", LT: "ES investicijos, Inovacijų agentūra", GB: "Find a grant", UK: "Find a grant", IT: "incentivi.gov.it",
+  ES: "BDNS", FR: "aides-entreprises.fr", US: "Grants.gov", NL: "RVO", LT: "ES investicijos, Inovacijų agentūra", GB: "Find a grant", UK: "Find a grant", IT: "Incentivi Italia",
   SE: "Vinnova", FI: "EURA 2021", NO: "Forskningsrådet, Innovasjon Norge, Tilskudd.no", DK: "Statens Tilskudspuljer, DFF, Innovationsfonden, Statens Kunstfond", AT: "FFG, aws, FWF", PT: "Portugal 2030, FCT, Fundo Ambiental", DE: "Förderberatung des Bundes, DFG",
   CZ: "dotaceeu.cz", GR: "ESPA", IE: "Enterprise Ireland, National Enterprise Hub, Research Ireland", RO: "MIPE announcements", PL: "FERS and FERC schedules (dane.gov.pl)", BE: "VLAIO, 1890.be, Innoviris, BELSPO",
 };
 export const PLANNED_SOURCES: Record<string, string> = {
-  DE: "Förderdatenbank", NL: "RVO", IT: "incentivi.gov.it", GB: "Find a Grant", UK: "Find a Grant", LT: "INVEGA / LVPA", PL: "PARP", AT: "FFG / aws",
+  DE: "Förderdatenbank", NL: "RVO", IT: "Incentivi Italia", GB: "Find a Grant", UK: "Find a Grant", LT: "INVEGA / LVPA", PL: "PARP", AT: "FFG / aws",
   SE: "Vinnova", DK: "Erhvervsstyrelsen", FI: "Business Finland", IE: "Enterprise Ireland", PT: "IAPMEI / Portugal 2030", BE: "regional agencies (VLAIO, Wallonie, Innoviris)",
 };
 
@@ -88,7 +88,7 @@ export const SOURCE_NAMES: Record<string, string> = {
   nl_rvo: "Netherlands RVO",
   lt_esinvesticijos: "Lithuania ES investicijos",
   uk_find_a_grant: "UK Find a grant",
-  it_incentivi: "Italy incentivi.gov.it",
+  it_incentivi: "Italy Incentivi Italia",
   se_vinnova: "Sweden Vinnova",
   fi_eura: "Finland EURA 2021",
   no_forskningsradet: "Norway Forskningsrådet",
@@ -132,7 +132,7 @@ export const SOURCE_SCOPE: Record<string, string> = {
   nl_rvo: "National innovation, energy and enterprise programmes run by RVO",
   lt_esinvesticijos: "EU-funded calls published on esinvesticijos.lt",
   uk_find_a_grant: "Central government grants on Find a grant (GOV.UK)",
-  it_incentivi: "National incentive schemes for businesses on incentivi.gov.it",
+  it_incentivi: "National incentive schemes for businesses on Incentivi Italia (incentivitalia.gov.it)",
   se_vinnova: "Vinnova calls and application rounds",
   fi_eura: "EU structural fund calls in EURA 2021",
   no_forskningsradet: "Research and innovation calls for proposals from the Research Council of Norway",

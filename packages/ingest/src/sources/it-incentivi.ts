@@ -1,31 +1,27 @@
 import type { Grant } from "@grantledger/schema";
 import { fetchJson, num, stripHtml } from "../util";
+import { LEGACY_IDS } from "./it-incentivi-ids";
 import type { Page, Source } from "./types";
 
-// Italy incentivi.gov.it (Ministry of Enterprises): public Solr index behind the portal's "Scarica JSON" open data
-// button, Italian Open Data License v2.0. About 6k incentives with structured beneficiaries, sizes, regions, amounts.
-const SITE = "https://www.incentivi.gov.it";
-const ENDPOINT = `${SITE}/solr/coredrupal/select`;
+// Italy, Incentivi Italia (Ministry of Enterprises, incentivitalia.gov.it): the daily open data export of the
+// incentives catalogue, CC BY 4.0. One JSON file of about 6k incentives (29 MB) with structured beneficiaries, sizes,
+// regions and amounts. It replaced the Solr index of incentivi.gov.it, which now redirects to the new portal.
+const SITE = "https://www.incentivitalia.gov.it";
+const EXPORT = `${SITE}/open-data/incentivi/OpenData_Incentivi.json`;
 const PAGE_SIZE = 200;
-const LICENSE = "IODL 2.0 (Italian Open Data License), incentivi.gov.it";
-const FIELDS = [
-  "zs_nid", "zs_title", "zs_body", "zs_url", "zm_field_scopes_value", "zs_field_open_date", "zs_field_close_date", "zs_field_close_date_descriptor",
-  "zm_field_dimensions_value", "zm_field_subject_type_value", "zm_field_support_form_value", "zs_field_cost_min", "zs_field_cost_max",
-  "zs_field_support_grant_type_min", "zs_field_support_grant_type_max", "zm_field_activity_sector_value", "zs_field_ateco", "zm_field_regions_value",
-  "zm_field_special_territory_value", "zs_field_subject_grant", "zs_field_budget_allocation", "zs_field_link", "ds_last_update",
-];
+const LICENSE = "CC BY 4.0, Incentivi Italia (incentivitalia.gov.it)";
 
-type Doc = Record<string, string | string[] | undefined>;
-interface SolrResponse { response: { numFound: number; start: number; docs: Doc[] } }
+type Doc = Record<string, string | number | string[] | null | undefined>;
 
 const NUTS: Record<string, string> = {
-  Piemonte: "ITC1", "Valle d'Aosta": "ITC2", Lombardia: "ITC4", Liguria: "ITC3", "Trentino-Alto Adige": "ITH1", Veneto: "ITH3", "Friuli-Venezia Giulia": "ITH4",
+  Piemonte: "ITC1", "Valle d'Aosta": "ITC2", Lombardia: "ITC4", Liguria: "ITC3", "Trentino-Alto Adige": "ITH1", "Trentino-Alto Adige/Südtirol": "ITH1", "Valle d'Aosta/Vallée d'Aoste": "ITC2", Veneto: "ITH3", "Friuli-Venezia Giulia": "ITH4",
   "Emilia-Romagna": "ITH5", Toscana: "ITI1", Umbria: "ITI2", Marche: "ITI3", Lazio: "ITI4", Abruzzo: "ITF1", Molise: "ITF2", Campania: "ITF3", Puglia: "ITF4",
   Basilicata: "ITF5", Calabria: "ITF6", Sicilia: "ITG1", Sardegna: "ITG2",
 };
 
-const str = (d: Doc, k: string) => (Array.isArray(d[k]) ? (d[k] as string[]).join(", ") : ((d[k] as string | undefined) ?? ""));
-const arr = (d: Doc, k: string) => (Array.isArray(d[k]) ? (d[k] as string[]) : d[k] ? [d[k] as string] : []);
+// The export pads empty fields with a single space and empty lists with [" "].
+const arr = (d: Doc, k: string) => (Array.isArray(d[k]) ? (d[k] as string[]) : typeof d[k] === "string" ? [d[k] as string] : []).map((x) => x.trim()).filter(Boolean);
+const str = (d: Doc, k: string) => (Array.isArray(d[k]) ? arr(d, k).join(", ") : String(d[k] ?? "").trim());
 
 function fundingTypes(forms: string[]): Grant["funding_types"] {
   const out = new Set<Grant["funding_types"][number]>();
@@ -59,65 +55,71 @@ function ateco(text: string): string[] {
 }
 
 function normalize(d: Doc): Grant {
-  const nid = str(d, "zs_nid");
-  const opens = str(d, "zs_field_open_date") ? new Date(str(d, "zs_field_open_date")).toISOString() : null;
-  const closes = str(d, "zs_field_close_date") ? new Date(str(d, "zs_field_close_date")).toISOString() : null;
+  const portalId = str(d, "idBando");
+  const id = LEGACY_IDS[portalId] ?? portalId;
+  const opens = str(d, "Data_apertura") ? new Date(str(d, "Data_apertura")).toISOString() : null;
+  const closes = str(d, "Data_chiusura") ? new Date(str(d, "Data_chiusura")).toISOString() : null;
   const now = new Date().toISOString();
   const status: Grant["status"] = closes && closes < now ? "closed" : opens && opens > now ? "forthcoming" : opens ? "open" : "unknown";
-  const regionsRaw = arr(d, "zm_field_regions_value");
-  const regions = regionsRaw.map((r) => NUTS[r] ?? r);
-  const sizes = arr(d, "zm_field_dimensions_value");
+  // "Estero" (abroad) is listed next to the regions and is not one.
+  const regionsRaw = arr(d, "Regioni").filter((r) => NUTS[r]);
+  const sizes = arr(d, "Dimensione_beneficiari");
   const summary = [
-    stripHtml(str(d, "zs_body")),
-    arr(d, "zm_field_scopes_value").length ? `Obiettivo: ${str(d, "zm_field_scopes_value")}` : "",
+    stripHtml(str(d, "Descrizione")),
+    str(d, "Obiettivo_Finalita") ? `Obiettivo: ${str(d, "Obiettivo_Finalita")}` : "",
     sizes.length ? `Dimensione impresa: ${sizes.join(", ")}` : "",
-    str(d, "zm_field_subject_type_value") ? `Tipologia soggetto: ${str(d, "zm_field_subject_type_value")}` : "",
-    str(d, "zm_field_support_form_value") ? `Forma agevolazione: ${str(d, "zm_field_support_form_value")}` : "",
-    str(d, "zs_field_ateco") ? `Codici ATECO: ${str(d, "zs_field_ateco")}` : "",
-    str(d, "zs_field_close_date_descriptor") ? `Note: ${str(d, "zs_field_close_date_descriptor")}` : "",
+    str(d, "Tipologia_Soggetto") ? `Tipologia soggetto: ${str(d, "Tipologia_Soggetto")}` : "",
+    str(d, "Forma_agevolazione") ? `Forma agevolazione: ${str(d, "Forma_agevolazione")}` : "",
+    str(d, "Codici_ATECO") ? `Codici ATECO: ${str(d, "Codici_ATECO")}` : "",
+    str(d, "Note_di_apertura_chiusura") ? `Note: ${str(d, "Note_di_apertura_chiusura")}` : "",
   ].filter(Boolean).join("\n\n");
-  const link = str(d, "zs_field_link");
+  const link = str(d, "Link_istituzionale");
   return {
-    id: `it_incentivi:${nid}`,
+    id: `it_incentivi:${id}`,
     source: "it_incentivi",
-    source_id: nid,
-    source_url: `${SITE}${str(d, "zs_url") || `/it/catalogo`}`,
+    source_id: id,
+    source_url: `${SITE}/incentivo/${portalId}`,
     source_license: LICENSE,
-    title: stripHtml(str(d, "zs_title")) || nid,
+    title: stripHtml(str(d, "Titolo")) || id,
     title_lang: "it",
     summary: summary.slice(0, 20000) || null,
-    funder_name: str(d, "zs_field_subject_grant") || null,
+    funder_name: str(d, "Soggetto_Concedente") || null,
     funder_level: regionsRaw.length > 0 && regionsRaw.length < 20 ? "regional" : "national",
     country: "IT",
-    regions: regionsRaw.length >= 20 ? [] : regions,
-    funding_types: fundingTypes(arr(d, "zm_field_support_form_value")),
-    beneficiary_types: beneficiaries(arr(d, "zm_field_subject_type_value"), sizes),
-    sectors: /tutti i settori/i.test(str(d, "zs_field_ateco")) ? [] : ateco(str(d, "zs_field_ateco")),
-    amount_min: num(str(d, "zs_field_support_grant_type_min")),
-    amount_max: num(str(d, "zs_field_support_grant_type_max")),
-    budget_total: num(str(d, "zs_field_budget_allocation")),
+    regions: regionsRaw.length >= 20 ? [] : regionsRaw.map((r) => NUTS[r]!),
+    funding_types: fundingTypes(arr(d, "Forma_agevolazione")),
+    beneficiary_types: beneficiaries(arr(d, "Tipologia_Soggetto"), sizes),
+    sectors: /tutti i settori/i.test(str(d, "Codici_ATECO")) ? [] : ateco(str(d, "Codici_ATECO")),
+    amount_min: num(d.Agevolazione_Concedibile_Min),
+    amount_max: num(d.Agevolazione_Concedibile_Max),
+    budget_total: num(d.Stanziamento_incentivo),
     currency: "EUR",
     status,
     opens_at: opens,
     closes_at: closes,
     documents: /^https?:\/\//.test(link) ? [{ title: "Sito istituzionale", url: link }] : [],
-    source_updated_at: str(d, "ds_last_update") ? new Date(str(d, "ds_last_update")).toISOString() : null,
+    source_updated_at: null,
   };
 }
 
+// The export is one file: download it once per process, then hand it out in pages.
+let catalogue: Promise<Doc[]> | undefined;
+
+// The file is too large to parse inside a Worker (128 MB), so this feed runs on the GitHub runner.
 export const itIncentivi: Source = {
   id: "it_incentivi",
   license: LICENSE,
+  runner: "local",
   start() {
     return "0";
   },
   async fetchPage(cursor): Promise<Page> {
     const start = Number(cursor);
-    const params = new URLSearchParams({ "q.op": "OR", wt: "json", rows: String(PAGE_SIZE), start: String(start), q: "index_id:incentivi", fl: FIELDS.join(","), sort: "id asc" });
-    const data = await fetchJson<SolrResponse>(`${ENDPOINT}?${params}`, { headers: { "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)" } });
-    const docs = data.response.docs;
+    catalogue ??= fetchJson<Doc[]>(EXPORT, { headers: { "user-agent": "Mozilla/5.0 (compatible; grantledger/0.1; +https://grantledger.eu)" } });
+    const all = await catalogue;
+    if (!Array.isArray(all) || all.length === 0) throw new Error("Incentivi Italia export is empty or not a list (format change?)");
+    const docs = all.slice(start, start + PAGE_SIZE);
     const grants = docs.map(normalize);
-    const seen = start + docs.length;
-    return { grants, raws: docs.map((d, i) => ({ source_id: grants[i]!.source_id, payload: d })), next: docs.length > 0 && seen < data.response.numFound ? String(seen) : null };
+    return { grants, raws: docs.map((d, i) => ({ source_id: grants[i]!.source_id, payload: d })), next: start + PAGE_SIZE < all.length ? String(start + PAGE_SIZE) : null };
   },
 };

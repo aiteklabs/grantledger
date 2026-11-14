@@ -15,9 +15,10 @@ const L = (href: string) => localePath(locale, href);
 const [stats, facts, register] = await Promise.all([getStats(env.DB), getSiteFacts(env.DB), getSourceRegister(env.DB)]);
 const model = geminiConfigured(env);
 const staleBefore = new Date(Date.now() - 2 * 86_400_000).toISOString();
-const failing = register.filter((r) => r.error).length;
-const stale = stats.sources.filter((s) => !s.last_seen || s.last_seen < staleBefore).length;
-const headline = failing + stale === 0 ? [c.headline_all, c.headline_ok, "var(--moss)"] : [c.headline_some.replace("{n}", String(failing + stale)).replace("{total}", String(stats.sources.length)), failing ? c.headline_attention : c.headline_late, "var(--amber)"];
+// A feed that fails for days is also stale: it counts once.
+const failing = new Set(register.filter((r) => r.error).map((r) => r.source));
+const affected = new Set([...failing, ...stats.sources.filter((s) => !s.last_seen || s.last_seen < staleBefore).map((s) => s.source)]).size;
+const headline = affected === 0 ? [c.headline_all, c.headline_ok, "var(--moss)"] : [c.headline_some.replace("{n}", String(affected)).replace("{total}", String(stats.sources.length)), failing.size ? c.headline_attention : c.headline_late, "var(--amber)"];
 ---
 <Base title={c.meta_title} description={c.meta_description}>
   <div class="wrap" style="padding-top:3rem;max-width:1000px">

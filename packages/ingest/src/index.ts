@@ -71,6 +71,12 @@ export default {
       return json(runs.results);
     }
 
+    // Feeds whose latest run ended in an error. The GitHub runner reads this and crawls them from its own network.
+    if (url.pathname === "/failing") {
+      const rows = await env.DB.prepare("SELECT source FROM ingest_runs r WHERE error IS NOT NULL AND started_at = (SELECT MAX(started_at) FROM ingest_runs WHERE source = r.source) ORDER BY source").all<{ source: string }>();
+      return json(rows.results.map((r) => r.source));
+    }
+
     if (req.method === "POST" && url.pathname === "/run") {
       if (!env.ADMIN_TOKEN || req.headers.get("authorization") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401);
       const body = (await req.json().catch(() => ({}))) as Partial<IngestParams>;
