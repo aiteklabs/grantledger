@@ -329,7 +329,7 @@ export async function getSourceRegister(db: D1Database): Promise<SourceHealth[]>
 async function querySourceRegister(db: D1Database): Promise<SourceHealth[]> {
   const now = new Date().toISOString();
   const [feeds, runs] = await db.batch([
-    db.prepare(`SELECT source, MIN(country) AS country, SUM(CASE WHEN status IN ('open','forthcoming') AND (closes_at IS NULL OR closes_at >= ?) THEN 1 ELSE 0 END) AS current, MAX(last_seen_at) AS last_seen FROM grants GROUP BY source`).bind(now),
+    db.prepare(`SELECT source, CASE WHEN COUNT(DISTINCT country) > 1 THEN 'EU' ELSE MIN(country) END AS country, SUM(CASE WHEN status IN ('open','forthcoming') AND (closes_at IS NULL OR closes_at >= ?) THEN 1 ELSE 0 END) AS current, MAX(last_seen_at) AS last_seen FROM grants GROUP BY source`).bind(now),
     db.prepare("SELECT source, started_at, error FROM ingest_runs r WHERE started_at = (SELECT MAX(started_at) FROM ingest_runs WHERE source = r.source)"),
   ]);
   const last = new Map((runs.results as { source: string; started_at: string; error: string | null }[]).map((r) => [r.source, r]));

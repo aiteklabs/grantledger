@@ -115,8 +115,14 @@ export async function upsertGrants(db: D1Database, bucket: R2Bucket, grants: Gra
   let changed = 0;
   valid.forEach((g, i) => {
     const hash = hashes[i]!;
-    if (existing.get(g.id) === hash || superseded.has(g.id)) {
+    if (superseded.has(g.id)) {
       groups.push([db.prepare("UPDATE grants SET last_seen_at = ? WHERE id = ?").bind(now, g.id)]);
+      return;
+    }
+    if (existing.get(g.id) === hash) {
+      // Same content as stored, so the stored status must be this one. The reconcile step closes a call the crawl
+      // missed without touching its hash; writing the status here reopens it the next time the publisher lists it.
+      groups.push([db.prepare("UPDATE grants SET last_seen_at = ?, status = ? WHERE id = ?").bind(now, g.status, g.id)]);
       return;
     }
     changed++;
