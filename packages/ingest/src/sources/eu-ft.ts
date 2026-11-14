@@ -3,8 +3,10 @@ import { fetchJson, num, statusFromDates, stripHtml, toIso } from "../util";
 import type { Page, Source } from "./types";
 
 // EU Funding & Tenders Portal SEARCH API. Public key "SEDIA", multipart POST, JSON parts.
-// Do not send a "sort" part: it silently replaces the query and returns FAQ pages.
-// type 1 = topics (grants), type 2 = calls published by EuropeAid / prospect (grants or procurement).
+// The "sort" part must be a JSON part like the query: sent as plain text it silently replaces the query and returns
+// FAQ pages. Without a sort the index pages in no fixed order, and a crawl misses about one record in ten.
+// type 1 = topics (grants), type 2 = calls published by EuropeAid / prospect (grants or procurement),
+// type 8 = cascade funding calls (financial support to third parties, issued by EU-funded projects).
 const ENDPOINT = "https://api.tech.ec.europa.eu/search-api/prod/rest/search?apiKey=SEDIA&text=***";
 const PAGE_SIZE = 100;
 const LICENSE = "European Commission reuse policy, Decision 2011/833/EU";
@@ -83,9 +85,59 @@ function first(m: EuResult["metadata"], key: string): string | null {
   return m[key]?.[0] ?? null;
 }
 
+// A cascade call is published by a funded project, not by the Commission: small grants, usually for one SME, startup
+// or researcher. The index gives it the identifier and the page of its parent topic, so the record id is the call's own
+// number and several calls can share one official page.
+function normalizeCascade(r: EuResult): Grant {
+  const m = r.metadata;
+  const callId = first(m, "callccm2Id") ?? r.reference;
+  const opens = toIso(first(m, "startDate"));
+  const deadlines = (m.deadlineDate ?? []).map(toIso).filter((d): d is string => !!d).sort();
+  const closes = deadlines.at(-1) ?? null;
+  const acronym = first(m, "projectAcronym");
+  const project = [first(m, "projectName"), acronym && `(${acronym})`].filter(Boolean).join(" ");
+  const title = stripHtml(first(m, "callTitle") || first(m, "caName") || r.summary || "") || `Cascade funding call ${callId}`;
+  const applying = first(m, "beneficiaryAdministration");
+  const further = first(m, "furtherInformation");
+  const description = [
+    `Cascade funding call (financial support to third parties)${project ? ` issued by the EU-funded project ${project}` : ""}, under topic ${first(m, "identifier") ?? ""} ${first(m, "title") ?? ""}`.trim() + ".",
+    first(m, "description"),
+    applying,
+    further !== applying ? further : "",
+    first(m, "duration") ? `Duration: ${first(m, "duration")}` : "",
+  ].filter(Boolean).join("\n\n");
+  return {
+    id: `eu_ft:CASCADE-${callId}`,
+    source: "eu_ft",
+    source_id: `CASCADE-${callId}`,
+    source_url: r.url,
+    source_license: LICENSE,
+    title,
+    title_lang: r.language ?? "en",
+    summary: stripHtml(description).slice(0, 20000),
+    funder_name: project || "European Commission",
+    funder_level: "supranational",
+    country: "EU",
+    regions: [],
+    funding_types: ["grant"],
+    beneficiary_types: [],
+    sectors: [],
+    amount_min: null,
+    amount_max: null,
+    budget_total: num(first(m, "budget")),
+    currency: "EUR",
+    status: STATUS[first(m, "status") ?? ""] ?? statusFromDates(opens, closes),
+    opens_at: opens,
+    closes_at: closes,
+    documents: [],
+    source_updated_at: null,
+  };
+}
+
 function normalize(r: EuResult): Grant {
   const m = r.metadata;
   const type = first(m, "type");
+  if (type === "8") return normalizeCascade(r);
   const identifier = first(m, "identifier") ?? r.reference;
   const opens = toIso(first(m, "startDate"));
   const deadlines = (m.deadlineDate ?? []).map(toIso).filter((d): d is string => !!d).sort();
@@ -165,15 +217,16 @@ export const euFt: Source = {
     if (!w) return { grants: [], raws: [], next: null };
     // The index holds every topic twice: a current SEDIA document and a legacy SEDIA_PRD_CENTRICITY copy with
     // stale fields. Only the SEDIA document is read, so one topic maps to exactly one record.
-    const must: unknown[] = [{ terms: { type: ["1", "2"] } }, { exists: { field: "identifier" } }, { term: { DATASOURCE: "SEDIA" } }];
+    const must: unknown[] = [{ terms: { type: ["1", "2", "8"] } }, { exists: { field: "identifier" } }, { term: { DATASOURCE: "SEDIA" } }];
     if (!w.noStart) must.push({ range: { startDate: { gte: `${w.from}T00:00:00.000Z`, lt: `${w.to}T00:00:00.000Z` } } });
     const query = w.noStart ? { bool: { must, must_not: [{ exists: { field: "startDate" } }] } } : { bool: { must } };
     const form = new FormData();
     form.set("query", new Blob([JSON.stringify(query)], { type: "application/json" }));
     form.set("languages", new Blob([JSON.stringify(["en"])], { type: "application/json" }));
+    form.set("sort", new Blob([JSON.stringify({ field: "REFERENCE", order: "ASC" })], { type: "application/json" }));
     const data = await fetchJson<EuResponse>(`${ENDPOINT}&pageSize=${PAGE_SIZE}&pageNumber=${c.page}`, { method: "POST", body: form });
-    // The index also holds FAQ and support pages; keep only topics and calls.
-    const results = data.results.filter((r) => ["1", "2"].includes(r.metadata.type?.[0] ?? "") && !/\/support\//.test(r.url));
+    // The index also holds FAQ and support pages; keep only topics, calls and cascade calls.
+    const results = data.results.filter((r) => ["1", "2", "8"].includes(r.metadata.type?.[0] ?? "") && !/\/support\//.test(r.url));
     const grants = results.map(normalize);
     const raws = results.map((r, i) => ({ source_id: grants[i]!.source_id, payload: r }));
     const seen = c.page * PAGE_SIZE;

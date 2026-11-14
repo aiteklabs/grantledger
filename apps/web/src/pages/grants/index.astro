@@ -58,7 +58,7 @@ const chips: [string, string, string][] = [["", d.status_current, ""], ["open", 
         <select name="country" aria-label="Country">
           <option value="">All countries</option>
           <option value="EUROPE" selected={params.country === "EUROPE"}>All Europe (every European country plus EU-wide)</option>
-          {Object.entries(COUNTRY_NAMES).filter(([c]) => ["EU", "DE", "FR", "IT", "ES", "PL", "NL", "BE", "AT", "PT", "SE", "FI", "DK", "NO", "IE", "CZ", "GR", "RO", "LT", "GB", "US"].includes(c)).map(([c, n]) => <option value={c} selected={params.country === c}>{n}</option>)}
+          {Object.entries(COUNTRY_NAMES).filter(([c]) => ["EU", "DE", "FR", "IT", "ES", "PL", "NL", "BE", "AT", "PT", "SE", "FI", "DK", "NO", "IE", "CZ", "GR", "RO", "LT", "BG", "HR", "CY", "EE", "HU", "LV", "LU", "MT", "SK", "SI", "IS", "CH", "GB", "US"].includes(c)).map(([c, n]) => <option value={c} selected={params.country === c}>{n}</option>)}
         </select>
         <select name="status" aria-label="Status">
           <option value="">{d.status_current}</option>
