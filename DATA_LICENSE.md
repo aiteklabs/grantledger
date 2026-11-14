@@ -13,7 +13,7 @@ license, recorded per source below and in `source_license` on every record.
 | `nl_rvo` | Rijksdienst voor Ondernemend Nederland, open data | CC0 1.0 (data.overheid.nl) | JSON list plus public detail pages for status. |
 | `lt_esinvesticijos` | Ministry of Finance of Lithuania, esinvesticijos.lt | Public information, source attribution kept on every record | HTML list and detail pages, one request per call. |
 | `uk_find_a_grant` | UK Government, Find a grant (GOV.UK) | Open Government Licence v3.0 | Server-rendered list pages. |
-| `it_incentivi` | Ministero delle Imprese e del Made in Italy, incentivi.gov.it | IODL 2.0 (Italian Open Data License) | Public Solr index behind the portal's open data export. |
+| `it_incentivi` | Ministero delle Imprese e del Made in Italy, Incentivi Italia (incentivitalia.gov.it) | CC BY 4.0 | Daily open data export of the incentives catalogue (JSON). |
 | `se_vinnova` | Vinnova (Sweden), open data API | Public Domain Mark | One request per crawl, rounds modified since 2015. |
 | `fi_eura` | EURA 2021 (Finland), EU structural funds calls | Public call notices, Ministry of Economic Affairs and Employment | Dataset embedded in the list page. |
 | `no_forskningsradet` | Forskningsrådet (Norway) | Public call information | JSON search API, current and completed calls. |
