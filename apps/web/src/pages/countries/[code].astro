@@ -2,6 +2,7 @@
 import { env } from "cloudflare:workers";
 import Base from "~/layouts/Base.astro";
 import GrantRow from "~/components/GrantRow.astro";
+import { POSTS, postPath } from "~/lib/blog";
 import { searchGrants } from "~/lib/db";
 import { COUNTRY_NAMES, SOURCE_NAMES, countryName, fmtInt } from "~/lib/format";
 import { localePath, t } from "~/i18n";
@@ -48,6 +49,12 @@ const jsonLd = {
         <h2 style="margin-top:2.5rem">{d.stat_sources}</h2>
         <ul>{feeds.results.map((f) => <li><a href={L(`/grants?source=${f.source}&country=${code}`)}>{SOURCE_NAMES[f.source] ?? f.source}</a> · {fmtInt(f.n)}</li>)}</ul>
         <p class="small muted"><a href="/coverage">Coverage</a></p>
+      </>
+    )}
+    {POSTS.some((p) => p.country === code) && (
+      <>
+        <h2 style="margin-top:2.5rem">Guides</h2>
+        <ul>{POSTS.filter((p) => p.country === code).map((p) => <li><a href={postPath(p)}>{p.title}</a></li>)}</ul>
       </>
     )}
   </div>

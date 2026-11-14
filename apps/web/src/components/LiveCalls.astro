@@ -1,0 +1,25 @@
+---
+import { env } from "cloudflare:workers";
+import GrantRow from "~/components/GrantRow.astro";
+import { searchGrants } from "~/lib/db";
+import { fmtInt } from "~/lib/format";
+
+// Current calls from the ledger inside a guide, so the page shows what is open on the day it is read.
+interface Props { heading: string; q?: string; country?: string; limit?: number }
+const { heading, q, country, limit = 6 } = Astro.props;
+const result = await searchGrants(env.DB, { q, country, sort: q ? "relevance" : "deadline", pageSize: limit });
+const query = new URLSearchParams();
+if (q) query.set("q", q);
+if (country) query.set("country", country);
+const all = `/grants?${query}`;
+---
+<h2 style="margin-top:2.5rem">{heading}</h2>
+{result.items.length > 0 ? (
+  <>
+    <p class="small muted">Live from the ledger, collected every night from official sources. Each line opens the record with the link to the publisher's page.</p>
+    <ul class="ledger">{result.items.map((g) => <GrantRow grant={g} />)}</ul>
+    {result.total > result.items.length && <p style="margin-top:1.2rem"><a class="btn ghost" href={all}>All {fmtInt(result.total)} matching calls</a></p>}
+  </>
+) : (
+  <p>No current call in the ledger matches today. <a href={all}>Search the ledger</a> or come back: it is refreshed every night.</p>
+)}

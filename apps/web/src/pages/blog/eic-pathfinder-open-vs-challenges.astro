@@ -1,0 +1,51 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="eic-pathfinder-open-vs-challenges">
+  <p class="lead">EIC Pathfinder is the Horizon Europe programme for early, high-risk research toward breakthrough technologies, at technology readiness levels 1 to 4, with grants of up to 4 million euros. It has two doors: Pathfinder Open takes any field and requires a consortium of at least three partners; Pathfinder Challenges takes proposals on topics set in advance and also accepts single applicants.</p>
+
+  <h2>Open or Challenges</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Pathfinder Open</th><th>Pathfinder Challenges</th></tr></thead>
+    <tbody>
+      <tr><td>Topic</td><td>Any field of science, technology or application</td><td>Predefined topics, funded as a portfolio of projects per Challenge</td></tr>
+      <tr><td>Who applies</td><td>Consortium of at least three independent legal entities: one in an EU member state, and at least two others in different member states or associated countries</td><td>Single applicants, small consortia of two partners, or larger consortia</td></tr>
+      <tr><td>Grant</td><td colspan="2">Up to 4 million euros, or more if duly justified</td></tr>
+      <tr><td>2027 budget</td><td>166 million euros</td><td>82 million euros, in roughly equal shares per Challenge</td></tr>
+      <tr><td>2027 deadlines</td><td>Stage 1: 25 February 2027. Stage 2: 16 September 2027</td><td>29 September 2027</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Figures from the European Innovation Council's pages for the 2027 work programme, dated 5 November 2026.</p>
+
+  <h2>What the evaluators look for</h2>
+  <p>The EIC lists three characteristics of a Pathfinder project: a convincing long-term vision of a radically new technology, a concrete and ambitious science-towards-technology breakthrough, and a high-risk, high-gain research approach. A project that improves an existing technology step by step is not what this programme funds. Projects start from early levels and aim to reach proof of concept, at readiness level 3 or 4.</p>
+
+  <h2>The 2027 Challenge topics</h2>
+  <ul>
+    <li>Breakthroughs in advanced materials for electricity generation, storage and transmission</li>
+    <li>Safe and controlled continual learning in open world for reliable AI agents (CLOWAI)</li>
+    <li>Quantum energetics</li>
+  </ul>
+
+  <h2>How hard is it to get</h2>
+  <p>The EIC does not publish a success rate on these pages, but it publishes the demand. The Pathfinder Open 2026 call received 2,103 proposals. The 2026 Challenges call received 1,138, which the EIC describes as almost double the 2025 figure. The whole Pathfinder budget for 2026 was 262 million euros. Plan the effort with those numbers in mind, and look at national programmes for the same research at the same time.</p>
+
+  <h2>How to apply</h2>
+  <ol>
+    <li>Read the call text in the EIC work programme of the year: it sets the page limits, the evaluation criteria and the funding rate. These are not on the summary pages.</li>
+    <li>For Open, build the consortium first. Three independent entities in three countries is the minimum, not the target.</li>
+    <li>Submit through the European Commission's Funding and Tenders Portal before the deadline.</li>
+  </ol>
+  <p>Projects funded by Pathfinder can also receive booster grants, a fixed amount of up to 50,000 euros.</p>
+
+  <LiveCalls heading="EIC calls in the ledger today" q="EIC Pathfinder" country="EU" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>European Innovation Council, EIC Pathfinder: scope, readiness levels, eligibility, 2027 deadlines and Open budget, 2026 proposal counts. <a href="https://eic.ec.europa.eu/eic-funding-opportunities/eic-pathfinder_en" rel="noopener">eic.ec.europa.eu</a></li>
+    <li>European Innovation Council, EIC Pathfinder Challenges 2027: topics and budget. <a href="https://eic.ec.europa.eu/eic-funding-opportunities/eic-pathfinder/eic-pathfinder-challenges-2027_en" rel="noopener">eic.ec.europa.eu</a></li>
+    <li>European Innovation Council, EIC 2026 work programme: Pathfinder budget for 2026. <a href="https://eic.ec.europa.eu/eic-2026-work-programme_en" rel="noopener">eic.ec.europa.eu</a></li>
+  </ul>
+</Article>

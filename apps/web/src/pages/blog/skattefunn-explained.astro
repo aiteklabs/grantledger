@@ -1,0 +1,70 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="skattefunn-explained">
+  <p class="lead">SkatteFUNN is Norway's tax deduction for research and development: a company taxable in Norway can deduct 19 percent of the costs of an approved R&D project from its tax, on a cost base of up to 25 million kroner a year. It is a right, not a competition: every project that meets the conditions is approved. A company with a loss receives the amount as a payment.</p>
+
+  <h2>Who can apply</h2>
+  <ul>
+    <li>Companies of every size, sector and legal form that are liable to tax in Norway and registered in the Brønnøysund registers. Norwegian branches of foreign companies (NUF) are included.</li>
+    <li>The company must exist, with an organisation number. A project cannot be moved from one organisation number to another.</li>
+    <li>The company does not need to be paying tax. If it runs a loss, the support is paid out with the tax settlement.</li>
+    <li>Unpaid work gives no deduction, so a sole proprietorship without employees has little to claim.</li>
+    <li>A company older than three years that has lost more than half of its equity cannot be approved while it is a company in difficulty.</li>
+  </ul>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Deduction</td><td>19 percent of approved project costs</td></tr>
+      <tr><td>Cost base ceiling</td><td>25 million kroner per company per income year; shared by all partners in a collaboration project</td></tr>
+      <tr><td>Approval</td><td>Normally for up to three years at a time</td></tr>
+      <tr><td>Date to remember</td><td>1 September: applications received by then are guaranteed a decision within the year</td></tr>
+      <tr><td>Run by</td><td>The Research Council of Norway, with the Norwegian Tax Administration</td></tr>
+    </tbody>
+  </table>
+  <p>You can apply all year. After 1 September the Research Council handles applications in order, as capacity allows. An application not decided by the end of the year gets no deduction for that first year.</p>
+
+  <h2>What counts as an R&D project</h2>
+  <p>The Research Council approves a project that meets three tests:</p>
+  <ol>
+    <li>It aims to develop or improve a product, a service or a production process.</li>
+    <li>It produces new knowledge, or uses existing knowledge in a new way. There must be a challenge with no known solution today, and a systematic method.</li>
+    <li>It is targeted and limited, and can be told apart from the company's ordinary operations.</li>
+  </ol>
+  <p>Routine changes to production, customer or market studies, training, installing purchased equipment and quality control of running production do not count.</p>
+
+  <h2>SkatteFUNN is state aid: mind the ceiling</h2>
+  <p>The deduction is state aid under Article 25 of the EU block exemption regulation, so the total public support for one project is capped as a share of its costs:</p>
+  <table>
+    <thead><tr><th>Company</th><th>Industrial research</th><th>Experimental development</th></tr></thead>
+    <tbody>
+      <tr><td>Small (under 50 employees)</td><td>70 percent, 80 in collaboration</td><td>45 percent, 60 in collaboration</td></tr>
+      <tr><td>Medium (under 250 employees)</td><td>60 percent, 75 in collaboration</td><td>35 percent, 50 in collaboration</td></tr>
+      <tr><td>Large</td><td>50 percent, 65 in collaboration</td><td>25 percent, 40 in collaboration</td></tr>
+    </tbody>
+  </table>
+  <p>If grants from other schemes already fill the cap, the SkatteFUNN deduction is reduced or lost. The Research Council's advice is to apply for grants first and SkatteFUNN afterwards. Other public support for the project is reported in the tax return.</p>
+
+  <h2>How to apply</h2>
+  <ol>
+    <li>Create a user profile on the Research Council's "Min side" and start the application from the SkatteFUNN call.</li>
+    <li>The project manager and the organisation's representative must each confirm their role there before the application can be sent.</li>
+    <li>Send it by 1 September to be sure of a decision in the same year.</li>
+    <li>Report on the approved project each year; the Research Council lists a reporting deadline of 1 March.</li>
+  </ol>
+  <p>The Research Council notes that changes to the scheme are proposed in the national budget for 2027. Read its page before you plan a project that starts in 2027.</p>
+
+  <LiveCalls heading="Norwegian R&D funding in the ledger" q="skattefunn" country="NO" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>Research Council of Norway, SkatteFUNN: rate, administration. <a href="https://www.forskningsradet.no/en/skattefunn/" rel="noopener">forskningsradet.no</a></li>
+    <li>Research Council of Norway, who can apply (updated 11 December 2025): eligibility, R&D tests, payout with a loss. <a href="https://www.forskningsradet.no/skattefunn/hvem/" rel="noopener">forskningsradet.no</a></li>
+    <li>Research Council of Norway, how to apply (updated 3 August 2026): cost ceiling, 1 September, approval period. <a href="https://www.forskningsradet.no/skattefunn/sok/" rel="noopener">forskningsradet.no</a></li>
+    <li>Research Council of Norway, state aid rules (updated 8 October 2025): aid intensities, other public support. <a href="https://www.forskningsradet.no/skattefunn/statstottereglene/" rel="noopener">forskningsradet.no</a></li>
+  </ul>
+</Article>

@@ -1,0 +1,74 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="mia-vamil-explained">
+  <p class="lead">MIA and Vamil are two Dutch tax schemes for businesses that buy environmentally friendly assets. MIA (Milieu-investeringsaftrek) is an extra deduction of 27, 36 or 45 percent of the investment from taxable profit. Vamil (Willekeurige afschrijving milieu-investeringen) lets you write off 75 percent of the investment at a moment you choose. You must apply to RVO within three months of ordering the asset, or the benefit is lost.</p>
+
+  <h2>Who can use them</h2>
+  <ul>
+    <li>Entrepreneurs who pay Dutch income tax or corporation tax, in the Netherlands or on Aruba, Curaçao, Sint Maarten, Bonaire, Sint Eustatius or Saba.</li>
+    <li>A foundation, an association or a public body can apply if it pays corporation tax.</li>
+    <li>Not private individuals.</li>
+  </ul>
+
+  <h2>The figures for 2026</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>MIA deduction</td><td>27, 36 or 45 percent of the investment, set by the asset's code</td></tr>
+      <tr><td>Vamil</td><td>75 percent of the investment written off when you choose; the other 25 percent follows normal depreciation</td></tr>
+      <tr><td>Net benefit</td><td>RVO states it can reach just over 14 percent of the investment</td></tr>
+      <tr><td>Minimum</td><td>2,500 euros per application</td></tr>
+      <tr><td>Maximum</td><td>25 million euros per year and per asset, unless the asset's description sets a lower amount</td></tr>
+      <tr><td>Budget 2026</td><td>155 million euros: 135 million for MIA, 20 million for Vamil</td></tr>
+      <tr><td>Decision</td><td>Usually within 8 weeks</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The Environment List decides everything</h2>
+  <p>Only assets on the Milieulijst of the year qualify, and the asset must match the description of its code. Use the list in force on the day you sign the purchase agreement or place the order. Each code starts with a letter that sets what you get:</p>
+  <table>
+    <thead><tr><th>Letter</th><th>MIA</th><th>Vamil</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>36 percent</td><td>75 percent</td></tr>
+      <tr><td>B</td><td>27 percent</td><td>75 percent</td></tr>
+      <tr><td>C</td><td>none</td><td>75 percent</td></tr>
+      <tr><td>D</td><td>36 percent</td><td>none</td></tr>
+      <tr><td>E</td><td>27 percent</td><td>none</td></tr>
+      <tr><td>F</td><td>45 percent</td><td>75 percent</td></tr>
+      <tr><td>G</td><td>45 percent</td><td>none</td></tr>
+    </tbody>
+  </table>
+  <p>Some entries describe the exact technology. Others set a performance target: for those you must compare your investment with a reference investment.</p>
+
+  <h2>Conditions people miss</h2>
+  <ul>
+    <li><b>The asset must be new.</b> Second-hand, refurbished or rebuilt assets are excluded. A vehicle counts as new only if it was used for less than 6 months and driven at most 6,000 kilometres.</li>
+    <li><b>No double dipping with the energy allowance.</b> An investment that received the EIA gets no MIA; Vamil stays possible.</li>
+    <li><b>Some subsidies exclude it.</b> RVO names AanZET, SSEB, STour, SWIM and SPRILA as not combinable with MIA and Vamil.</li>
+    <li><b>Use it or pay it back.</b> The Dutch government's business portal states a disposal charge if the asset is not taken into use within 3 years, or sold within 5 years.</li>
+  </ul>
+
+  <h2>How and when to apply</h2>
+  <ol>
+    <li>Find the code of your asset on the Milieulijst before you order.</li>
+    <li>Apply in RVO's online portal with eHerkenning level 2+. An adviser can apply for you with their own eHerkenning.</li>
+    <li><b>Within 3 months of the purchase obligation.</b> That is the date of the purchase agreement, not the quote, the invoice, the delivery or the payment. For assets you build yourself: within 3 months after the end of the quarter in which the costs were made.</li>
+    <li>Claim the deduction in your tax return for the year of the investment. With no profit that year, it can be carried back and forward under the normal loss rules.</li>
+  </ol>
+  <p>Apply late and, in RVO's words, you miss the tax benefit. There is no extension.</p>
+
+  <LiveCalls heading="Dutch environmental and energy schemes in the ledger" q="milieu-investeringsaftrek" country="NL" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>RVO, MIA and Vamil (checked by RVO on 29 October 2026): percentages, net benefit. <a href="https://www.rvo.nl/subsidies-financiering/mia-vamil" rel="noopener">rvo.nl</a></li>
+    <li>RVO, MIA and Vamil for entrepreneurs (checked on 10 November 2026): budget 2026, decision time. <a href="https://www.rvo.nl/subsidies-financiering/mia-vamil/ondernemers" rel="noopener">rvo.nl</a></li>
+    <li>RVO, conditions (checked on 29 July 2026): who, minimum, maximum, new assets, combinations. <a href="https://www.rvo.nl/subsidies-financiering/mia-vamil/ondernemers/voorwaarden" rel="noopener">rvo.nl</a></li>
+    <li>RVO, how to apply (checked on 4 November 2026): portal, three-month deadline, tax return. <a href="https://www.rvo.nl/subsidies-financiering/mia-vamil/ondernemers/aanvragen" rel="noopener">rvo.nl</a></li>
+    <li>RVO, Milieulijst (checked on 9 October 2026): letter codes. <a href="https://www.rvo.nl/subsidies-financiering/mia-vamil/milieulijst" rel="noopener">rvo.nl</a></li>
+    <li>Business.gov.nl, MIA and Vamil in English: disposal charge. <a href="https://business.gov.nl/subsidy/mia-vamil/" rel="noopener">business.gov.nl</a></li>
+  </ul>
+</Article>
