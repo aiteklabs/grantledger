@@ -52,7 +52,8 @@ function normalize(en: Entry): Grant {
   if (/autorit|primării|uat|consili/.test(text)) bens.add("public_body");
   if (/ong|asocia/.test(text)) bens.add("ngo");
   if (/universit|cercetare/.test(text)) bens.add("research_org");
-  const idBase = en.id.replace(/^https?:\/\//, "").replace(/[^\w.=?-]+/g, "_").slice(0, 120);
+  // The feed id is "https://mfe.gov.ro/?p=112774". The id ends up in the grant page address, so "?" and "=" go too.
+  const idBase = en.id.replace(/^https?:\/\//, "").replace(/[^\w.-]+/g, "_").slice(0, 120);
   return {
     id: `ro_mfe:${idBase}`,
     source: "ro_mfe",
