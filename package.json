@@ -10,7 +10,7 @@
     "deploy:ingest": "pnpm --filter @grantledger/ingest run release"
   },
   "devDependencies": {
-    "@types/node": "^22.20.4"
+    "@types/node": "^24.19.2"
   },
   "pnpm": {
     "overrides": {
