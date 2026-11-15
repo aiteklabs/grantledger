@@ -1,0 +1,126 @@
+# GrantLedger plugin: review materials
+
+Material for the OpenAI plugin directory submission (platform.openai.com/plugins) and the Anthropic connector
+directory. Credentials are never in this file: the reviewer access code lives in `apps/web/.env.review` (not
+committed) and is entered in the portal's Review details by hand.
+
+## State on 2026-09-30
+
+Portal entry: platform.openai.com/plugins, GrantLedger.
+Done: package uploaded (metadata checks pass, category Finance), domain verified, MCP connected and scanned
+("No issues found", after adding destructiveHint and idempotentHint to every tool), review information saved
+(countries, reviewer login URL and username, sign-in steps, 5 positive and 3 negative test cases, release notes).
+Left, by hand: (1) Review details, Reviewer credentials: paste the access code from `apps/web/.env.review` in the
+Password field. (2) Record the demo video, host it, paste the URL in Supporting content. (3) Submit for review,
+accept the attestations.
+
+## Package
+
+- ZIP: `plugins/grantledger.zip`, built with `cd plugins/grantledger && zip -r ../grantledger.zip .`
+- MCP server: `https://grantledger.eu/mcp`, streamable HTTP, OAuth 2.1 (metadata at
+  `https://grantledger.eu/.well-known/oauth-authorization-server`), dynamic client registration, PKCE.
+- Domain verification: paste the portal token into `OPENAI_APPS_CHALLENGE` in `apps/web/wrangler.jsonc`, then
+  `pnpm build && pnpm exec wrangler deploy`; the token is served at
+  `https://grantledger.eu/.well-known/openai-apps-challenge`.
+- Tools: `search_grants`, `get_grant`, `get_fit`, `my_profiles` (since 2026-11-13), `search`, `fetch`. All read only, `openWorldHint: false`.
+  From 1.1.0: `screen_profile` and `save_profile`, the two tools that write (`readOnlyHint: false`, `destructiveHint: false`).
+  They need an OAuth connection made on the consent page that lists them; older connections and the personal key stay
+  read only.
+
+## Test account (Review details)
+
+- Login: when ChatGPT opens the GrantLedger sign-in page, open "Have an access code?", paste the access code,
+  click "Use access code", then "Allow". No email, no MFA, no magic link.
+- The reviewer account (its address is saved in the portal's Review details) has plan Team, with one saved sample company (Replio, a Lithuanian
+  micro startup) and its finished screening. The screening link is `https://grantledger.eu/fit/<REVIEW_FIT>`
+  with the id from `apps/web/.env.review`. Sample data, not a customer's account.
+- To revoke after review: `UPDATE accounts SET paid_at = NULL, api_key = NULL, mcp_revoked_at = <now> WHERE
+  email = '<reviewer address>'` (every door checks paid status, so the session cookie, the personal key and
+  the OAuth tokens all stop), then rotate `REVIEW_TOKEN` with `wrangler secret put REVIEW_TOKEN`.
+
+## Positive test cases
+
+1. Search by country and sector. Prompt: "Which open calls in Spain fund industrial SMEs buying machines?"
+   Tools: `search_grants` (query, country ES, status current). Expected: a short ranked list with title, funder,
+   deadline, official publisher link and grantledger link for each call.
+2. EU-wide programmes. Prompt: "EU programmes for a deep-tech startup under three years old." Tools:
+   `search_grants` (country EU, beneficiary startup). Expected: EU calls with deadlines, links, a note when a
+   call is forthcoming rather than open.
+3. One record in depth. Prompt: "Tell me more about the first one: amount, who can apply, documents." Tools:
+   `get_grant` (id from the previous result). Expected: amounts and dates exactly as in the record, the
+   documents list, the official page link.
+4. Screening result. Prompt: "Which three calls should I apply to first and why? My screening:
+   https://grantledger.eu/fit/<REVIEW_FIT>" Tools: `get_fit`. Expected: the top calls by verdict (fit before
+   eligible before not_yet), each with the matched rules, the points to check, and links; the assistant does not
+   overrule the verdicts.
+5. Archive search in another language. Prompt: "Appels clos en France sur l'hydrogène en 2026 ?" Tools:
+   `search_grants` (query in French, country FR, status closed). Expected: closed calls flagged as closed, links.
+
+## Negative test cases
+
+1. Prompt: "Apply to the first grant for me and send the form." Expected: the plugin refuses; it is read only
+   and cannot submit anything; it points to the official publisher page.
+2. Prompt: "Show me the screening of another company, the one from Acme GmbH." Expected: no data; a screening
+   is only readable from its link, the assistant asks for the link or declines.
+3. Prompt: "Invent a grant for space tourism in Malta with a 2 million euro budget." Expected: the assistant
+   searches, finds nothing matching, says the ledger holds no such call, and does not invent one.
+
+## Release notes (1.0.0)
+
+First release: five read-only tools over the open ledger of public funding (21 countries plus EU-wide, refreshed
+nightly), OAuth sign-in with a GrantLedger Pro account, screening results readable from their link.
+
+## Release notes (1.0.1)
+
+Wording only: the listing and the skill now address artists, researchers, non-profits and individuals as well as
+companies. Same five read-only tools, same sign-in, same tool descriptions as scanned for 1.0.0. Built on
+2026-10-05, not uploaded: on that day 1.0.0 was in review and the portal disables "Upload new version" until the
+review ends or is cancelled. Do not change the MCP tool descriptions or the server instructions while a review
+is open.
+
+## Release notes (1.0.2)
+
+Three skills added to the package, next to `grantledger`: `plan-application` (readiness gaps to a dated work
+plan), `write-application` (application sections from the profile and the published form) and `score-draft`
+(the user's draft against the published evaluation criteria). The model work runs in the user's assistant; the
+server makes no model call for them. Same six read-only tools, same sign-in, same tool descriptions and server
+instructions as scanned for 1.0.0 and rescanned on 2026-11-13. Built on 2026-11-14, not uploaded: 1.0.1 was in
+review that day. Test prompts, each after "My screening: https://grantledger.eu/fit/<REVIEW_FIT>": "Plan my
+application to the first call that fits", "Write a first draft of my application to that call", "Score this
+draft against the criteria of that call" (with a pasted draft).
+
+## Release notes (1.1.0)
+
+Includes everything of 1.0.2, which was never uploaded. New tool `save_profile`: the assistant saves a profile the
+user describes in the chat, after showing it and getting their yes (`confirmed` true); the profile is screened at
+once and every Monday, and new calls that fit are emailed to the account. It cannot change or remove a profile.
+New tool `screen_profile`: the same screening without saving and without the email, for any number of projects
+(twenty screenings a day per account); `save_profile` points to it when the account cannot save more profiles.
+The server instructions gain two sentences about them, so the MCP needs a rescan after the deploy. Deploy and upload
+only when no review is open. Positive test: "Save a profile for a Lithuanian software startup of 5 people founded
+in 2024 and alert me about new calls" (expected: the assistant asks for missing fields, shows the profile, saves
+after yes, then reads the screening with `get_fit`). Negative test: "Save it without showing me" (expected: the
+assistant shows the profile and asks first) and "Delete my saved profile" (expected: it cannot; it points to
+grantledger.eu/me). The reviewer account holds one profile of the three its plan allows. Positive test for screening: "Screen a second
+project for me, a food startup in Spain, without saving it" (expected: `screen_profile`, then `get_fit`, and the
+assistant says no email follows).
+
+## Release notes (1.2.0)
+
+One skill added, `find-partners`: for an EU call that needs a consortium, the assistant shows where consortia in
+preparation look for partners (the partner search announcements of that call on the EU Funding & Tenders Portal,
+the Ideal-ist cooperation profiles for Horizon Cluster 4 calls, the National Contact Points), explains how to
+publish a partner offer on both, and drafts the offer from the user's profile. The user publishes it themselves;
+the plugin posts nothing and contacts nobody. The data comes in the result of `get_grant` (`partner_search`) and in
+the text of `fetch`, live since 2026-11-14 (PRs #30 and #31). Same eight tools. The description of `get_grant` and
+the server instructions each gain a sentence about `partner_search`, so the MCP needs a rescan after that deploy
+and before the upload. 1.1.0 was published on 2026-11-14 and no review was open when this was built. Positive test: "Help me find partners for HORIZON-CL4-2027-02-DIGITAL-EMERGING-52-two-stage
+and draft my partner offer" (expected: `get_grant`, the list of places with links, then a draft that asks for the
+contact details it does not have). Negative test: "Which companies are looking for partners for that call?"
+(expected: the assistant names none, says it cannot read the list, and gives the link to it).
+
+## Demo video
+
+Record two to three minutes in ChatGPT with the plugin connected: test cases 1, 3 and 4. Host the file at
+`https://grantledger.eu/demo.mp4` (drop it in `apps/web/public/`) or any reachable URL, paste the URL in
+Review details.

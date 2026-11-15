@@ -1,0 +1,166 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { getStats } from "~/lib/db";
+import { SOURCE_NAMES, fmtDate, fmtInt } from "~/lib/format";
+import { t } from "~/i18n";
+import { methodology } from "~/i18n/pages/methodology";
+
+export const prerender = false;
+const d = t(Astro.locals.locale);
+const c = methodology[Astro.locals.locale] ?? methodology.en;
+// Split a paragraph around its inline link placeholder.
+const around = (s: string) => s.split("{link}") as [string, string];
+const [leadBefore, leadAfter] = around(c.lead);
+const [sourcesBefore, sourcesAfter] = around(c.sources_p);
+const stats = await getStats(env.DB);
+const licenses: Record<string, string> = {
+  eu_ft: "European Commission reuse policy (Decision 2011/833/EU)",
+  es_bdns: "BDNS legal notice (infosubvenciones.es)",
+  fr_aides_entreprises: "Licence Ouverte 2.0 (Etalab)",
+  us_grants_gov: "US Government work, public domain",
+  nl_rvo: "CC0 1.0 (data.overheid.nl)",
+  lt_esinvesticijos: "Public information, esinvesticijos.lt",
+  uk_find_a_grant: "Open Government Licence v3.0",
+  it_incentivi: "CC BY 4.0 (Incentivi Italia)",
+  se_vinnova: "Public Domain Mark (Vinnova)",
+  fi_eura: "Public call notices (EURA 2021)",
+  no_forskningsradet: "Public call information (Forskningsrådet)",
+  dk_tilskudspuljer: "Open data export (Statens Tilskudspuljer)",
+  at_ffg: "Public call information (FFG)",
+  pt_portugal2030: "Public call notices (Portugal 2030)",
+  de_foerderinfo: "Public federal announcements (Förderberatung des Bundes)",
+  cz_dotaceeu: "Public call list (dotaceeu.cz)",
+  gr_espa: "Public proclamations (ESPA)",
+  ie_enterprise_ireland: "Public supports information (Enterprise Ireland)",
+  ro_mfe: "Public announcements (MIPE)",
+  pl_harmonogram: "CC0 1.0 (dane.gov.pl)",
+  be_1890: "Public directory (1890.be, Région wallonne)",
+  be_innoviris: "Public programme calendar (Innoviris)",
+  be_vlaio: "Public information (VLAIO)",
+  at_aws: "aws public programme information (aws.at)",
+  at_fwf: "FWF public funding programme information",
+  be_belspo: "BELSPO public call information",
+  dk_dff: "Danmarks Frie Forskningsfond public call information",
+  dk_innovationsfonden: "Innovationsfonden public call information",
+  dk_kunstfond: "Statens Kunstfond public grant pool information",
+  de_dfg: "DFG public calls for proposals (Informationen für die Wissenschaft)",
+  ie_enterprise_hub: "National Enterprise Hub public business supports information (Government of Ireland)",
+  ie_research_ireland: "Research Ireland public funding call information",
+  no_innovasjonnorge: "Innovasjon Norge public service information",
+  no_tilskudd: "Tilskudd.no public register of state grant schemes (Lotteri- og stiftelsestilsynet)",
+  pt_fct: "FCT public call information",
+  pt_fundo_ambiental: "Fundo Ambiental public call notices (Agência para o Clima, I.P.)",
+  lt_inovacijuagentura: "Inovacijų agentūra public call information (inovacijuagentura.lt)",
+  uk_prs_foundation: "PRS Foundation public funding programme information",
+  uk_sussex_cf: "Sussex Community Foundation public grant programme information",
+  uk_brighton_hove: "Brighton & Hove City Council public grant information",  fr_iledefrance: "Licence Ouverte v2.0 (Etalab), data.iledefrance.fr",
+  de_dsee: "DSEE Förderdatenbank public programme register (Deutsche Stiftung für Engagement und Ehrenamt)",
+  ee_etag: "Eesti Teadusagentuur public call information (etag.ee)",
+  ee_rtk: "Riigi Tugiteenuste Keskus public application round information (rtk.ee)",
+  ee_kysk: "Kodanikuühiskonna Sihtkapital public application round information (kysk.ee)",
+  lu_fnr: "FNR public funding instrument information (fnr.lu)",
+  is_island: "Ísland.is public grant information (Stafrænt Ísland, island.is)",
+  ch_prohelvetia: "Pro Helvetia public funding information (prohelvetia.ch)",
+  ch_innosuisse: "Innosuisse public call information (innosuisse.admin.ch, Swiss Confederation)",
+  mt_xjenza: "Xjenza Malta public funding scheme information (xjenzamalta.mt)",
+  cz_tacr: "TA ČR public call information (tacr.gov.cz)",
+  cz_sfzp: "SFŽP ČR public call information (narodniprogramzp.cz, sfzp.gov.cz)",
+  pt_pepac: "PEPAC no Continente public call notices (pepacc.pt)",
+  pt_gulbenkian: "Fundação Calouste Gulbenkian public grant and scholarship information (gulbenkian.pt)",
+  lt_apva: "APVA public call information (apvis.apva.lt)",
+  lt_cpva: "CPVA public call information (cpva.lt)",
+  gr_agro: "agrotikianaptixi.gr public call notices (Υπουργείο Αγροτικής Ανάπτυξης και Τροφίμων)",
+  ro_afir: "AFIR public session information (afir.ro)",
+  si_gov_objave: "GOV.SI public notices, Republic of Slovenia (gov.si)",
+  si_aris: "ARIS public call information (aris-rs.si)",
+  si_podjetniski_sklad: "Slovenski podjetniški sklad public call information (podjetniskisklad.si)",
+  si_evropska_sredstva: "evropskasredstva.si public call information, Republic of Slovenia",
+  bg_isun: "ISUN 2020 public procedure register, Republic of Bulgaria (eumis2020.government.bg)",
+  hu_nkfih: "NKFIH public call information (nkfih.gov.hu)",
+  eu_eit: "EIT re-use policy: free re-use with acknowledgement of the source (eit.europa.eu/legal-notice)",
+  uk_innovate: "Open Government Licence v3.0 (Innovate UK, UK Research and Innovation)",
+  ie_hrb: "Health Research Board public funding scheme information (hrb.ie)",
+  nl_zonmw: "ZonMw public subsidy call information (zonmw.nl)",
+  nl_nwo: "NWO public call information (nwo.nl)",
+  nl_gelderland: "Provincie Gelderland public subsidy information (gelderland.nl)",
+  pl_ncbr: "CC BY-SA 4.0 (gov.pl text content, Narodowe Centrum Badań i Rozwoju)",
+  pl_nfosigw: "CC BY-SA 4.0 (gov.pl text content, Narodowy Fundusz Ochrony Środowiska i Gospodarki Wodnej)",
+  pl_regional: "Regional EU programme public call notices (voivodeship managing authorities, Fundusze Europejskie 2021-2027)",
+  fi_haeavustuksia: "Haeavustuksia.fi public government grant call notices (Valtiokonttori, State Treasury of Finland)",
+  fi_aka: "Research Council of Finland public call information (aka.fi)",
+  fi_skr: "Suomen Kulttuurirahasto public grant information (skr.fi)",
+  us_california: "Public domain (California Grants Portal open data, data.ca.gov)",
+  se_formas: "Formas public call information (formas.se)",
+  se_energimyndigheten: "Energimyndigheten public call information (energimyndigheten.se)",
+  se_kulturradet: "Kulturrådet public grant information (kulturradet.se)",
+  se_forte: "Forte public call information (forte.se)",
+  dk_novo_nordisk: "Novo Nordisk Fonden public grant information (novonordiskfonden.dk)",
+  dk_carlsberg: "Carlsbergfondet public call information (carlsbergfondet.dk)",
+  no_kulturdirektoratet: "Kulturdirektoratet public grant scheme information (kulturdirektoratet.no)",
+  no_regionale_forskningsfond: "Regionale forskningsfond public call information (regionaleforskningsfond.no)",
+  it_piemonte: "Regione Piemonte public call information (bandi.regione.piemonte.it)",
+  it_lazio: "Lazio Europa public call information (Regione Lazio, lazioeuropa.it)",
+  it_toscana: "Regione Toscana public call information (regione.toscana.it)",
+  it_con_il_sud: "Fondazione Con il Sud public call information (fondazioneconilsud.it)",
+  be_kbs: "King Baudouin Foundation public call information (kbs-frb.be)",
+  be_fnrs: "F.R.S.-FNRS public funding information (frs-fnrs.be)",
+  be_hub_brussels: "hub.brussels public subsidy directory (info.hub.brussels)",
+  sk_itms21: "ITMS21+ open data API (Ministerstvo investícií, regionálneho rozvoja a informatizácie SR)",
+  sk_fpu: "Fond na podporu umenia public call information (fpu.sk)",
+  hr_ekohezija: "eKohezija public call data (Ministarstvo regionalnoga razvoja i fondova Europske unije)",
+  hr_ruralnirazvoj: "ruralnirazvoj.hr public call information (Ministarstvo poljoprivrede, šumarstva i ribarstva)",
+  lv_esfondi: "esfondi.lv public information on EU fund project selections (Finanšu ministrija)",
+  cy_funding_portal: "Funding Programmes Portal public call information (Republic of Cyprus, Directorate General Growth, Ministry of Finance)",
+  eu_eea_grants: "EEA and Norway Grants public call information (eeagrants.org, Financial Mechanism Office)",
+};
+---
+<Base title={d.method_title} description={c.description}>
+  <div class="wrap" style="padding-top:3rem;max-width:860px">
+    <span class="kicker">{d.nav_method}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.4rem)">{c.h1}</h1>
+    <p class="lead">{leadBefore}<a href="https://github.com/aiteklabs/grantledger" rel="noopener">{c.lead_link}</a>{leadAfter}</p>
+
+    <h2>{c.sources_h}</h2>
+    <p>{sourcesBefore}<a href="/coverage">{c.sources_link}</a>{sourcesAfter}</p>
+    <table>
+      <thead><tr><th>{c.th_source}</th><th>{c.th_license}</th><th>{c.th_current}</th><th>{c.th_archived}</th><th>{c.th_checked}</th></tr></thead>
+      <tbody>{stats.sources.map((s) => <tr><td>{SOURCE_NAMES[s.source] ?? s.source}</td><td class="small">{licenses[s.source]}</td><td>{fmtInt(s.open)}</td><td>{fmtInt(s.n - s.open)}</td><td class="mono small">{fmtDate(s.last_seen)}</td></tr>)}</tbody>
+    </table>
+    <p class="small muted">{c.coverage_note}</p>
+
+    <h2>{c.schema_h}</h2>
+    <p>{c.schema_p}</p>
+
+    <h2>{c.versions_h}</h2>
+    <p>{c.versions_p}</p>
+
+    <h2>{c.fit_h}</h2>
+    <p>{c.fit_p}</p>
+    <ul>
+      {c.rules.map((r) => <li><b>{r.label}</b>: {r.text}</li>)}
+    </ul>
+    <p>{c.verdict_intro} <span class="tag fit">{d.verdict_fit}</span> {c.verdict_fit} <span class="tag eligible">{d.verdict_eligible}</span> {c.verdict_eligible} <span class="tag not_yet">{d.verdict_not_yet}</span> {c.verdict_not_yet} <span class="tag no">{d.verdict_no}</span> {c.verdict_no} {c.verdict_outro}</p>
+
+    <h2>{c.gaps_h}</h2>
+    <p>{c.gaps_p}</p>
+
+    <h2>{c.model_h}</h2>
+    <p>{c.model_p}</p>
+    <ul>
+      {c.model_items.map((m) => <li><b>{m.label}</b> {m.text.replace("{model}", env.GEMINI_MODEL)}</li>)}
+    </ul>
+    <p>{c.model_outro}</p>
+
+    <h2>{c.privacy_h}</h2>
+    <p>{c.privacy_p}</p>
+
+    <h2>{c.not_h}</h2>
+    <ul>
+      {c.not_items.map((item) => <li>{item}</li>)}
+    </ul>
+
+    <h2>{c.oss_h}</h2>
+    <p>{c.oss_p}</p>
+  </div>
+</Base>

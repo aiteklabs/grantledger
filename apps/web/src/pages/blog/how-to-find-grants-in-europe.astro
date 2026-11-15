@@ -1,0 +1,63 @@
+---
+import { env } from "cloudflare:workers";
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+import { getSiteFacts, getStats } from "~/lib/db";
+import { COUNTRY_NAMES, SOURCE_NAMES, fmtInt } from "~/lib/format";
+export const prerender = false;
+
+const [facts, stats] = await Promise.all([getSiteFacts(env.DB), getStats(env.DB)]);
+const countries = stats.countries.filter((c) => c.open > 0).sort((a, b) => b.open - a.open);
+const sources = stats.sources.filter((s) => s.open > 0).sort((a, b) => b.open - a.open).slice(0, 12);
+---
+<Article slug="how-to-find-grants-in-europe">
+  <p class="lead">To find a grant in Europe, search the official publishers, not the lists that copy them: the EU's Funding and Tenders Portal for EU programmes, and the national or regional agency of the country where you are established. GrantLedger collects those official calls every night into one free, searchable ledger, so one search covers {facts.countries} countries plus the EU-wide programmes.</p>
+
+  <h2>Why it is hard</h2>
+  <p>There is no single European register of public funding. The European Commission publishes its own calls. Each country publishes its own, often through several bodies: an innovation agency, a research council, a ministry, a region. Each one writes in its own language and uses its own words for the same thing: a subsidy in one country is an aid, a scheme, a voucher or a call in another.</p>
+  <p>So a company in Lithuania does not see a programme open to it in Brussels, and a researcher moving to Austria does not know where Austrian calls are listed. The funding exists. The search is the obstacle.</p>
+
+  <h2>The method, in five steps</h2>
+  <ol>
+    <li><b>Write down who is applying.</b> Country and region, legal form (company, non-profit, research organisation, public body, individual), size, age, sector. Almost every call filters on these before anything else.</li>
+    <li><b>Search two levels.</b> Your own country, and the EU-wide programmes that any eligible organisation in Europe can enter. On this site: <a href="/countries">pick your country</a>, then look at the <a href="/countries/eu">EU-wide calls</a>.</li>
+    <li><b>Search by what you do, in English.</b> Every record in the ledger carries an English summary and English search terms, whatever the language of the publisher. Try <a href="/grants?q=energy+efficiency">energy efficiency</a>, <a href="/grants?q=artificial+intelligence">artificial intelligence</a> or <a href="/grants?q=export">export</a>.</li>
+    <li><b>Check the type of funding.</b> A grant is not repaid. A loan is. A guarantee helps you borrow. A tax credit lowers what you owe. A voucher pays a supplier. They are all public funding, and the right one depends on your cash position, not on the headline amount.</li>
+    <li><b>Read the official page before you invest time.</b> Every record links to the publisher's page. Check the deadline, who can apply, whether partners are required and what must be co-financed. Then decide.</li>
+  </ol>
+
+  <h2>What the ledger holds today</h2>
+  <div class="stats">
+    <div class="stat live"><div class="n">{fmtInt(facts.active)}</div><div class="l">Current calls</div></div>
+    <div class="stat"><div class="n">{facts.countries}</div><div class="l">Countries, plus EU-wide</div></div>
+    <div class="stat"><div class="n">{facts.sources}</div><div class="l">Official sources</div></div>
+  </div>
+  <p style="margin-top:1.2rem">Current calls by country, counted now:</p>
+  <table>
+    <thead><tr><th>Country</th><th>Current calls</th></tr></thead>
+    <tbody>
+      {countries.map((c) => <tr><td><a href={`/countries/${c.country.toLowerCase()}`}>{COUNTRY_NAMES[c.country] ?? c.country}</a></td><td>{fmtInt(c.open)}</td></tr>)}
+    </tbody>
+  </table>
+  <p style="margin-top:1.2rem">The largest sources today: {sources.map((s, i) => <>{i > 0 && ", "}<a href={`/grants?source=${s.source}`}>{SOURCE_NAMES[s.source] ?? s.source}</a></>)}. The full list, with what is not covered yet, is on the <a href="/coverage">coverage page</a>.</p>
+
+  <h2>Words that change from country to country</h2>
+  <ul>
+    <li><b>Call</b> (appel, Ausschreibung, convocatoria, bando, oproep): a dated opening with a deadline.</li>
+    <li><b>Scheme</b> or <b>programme</b>: a standing instrument, often open all year, such as a guarantee or a tax deduction. Examples explained here: the Dutch <a href="/blog/bmkb-borgstellingskrediet-explained">BMKB</a> and <a href="/blog/mia-vamil-explained">MIA and Vamil</a>, and Norway's <a href="/blog/skattefunn-explained">SkatteFUNN</a>.</li>
+    <li><b>De minimis</b>: small aid that a funder can grant without EU approval, up to a ceiling per company. See <a href="/blog/de-minimis-aid-explained">de minimis explained</a>.</li>
+    <li><b>Consortium</b>: several independent organisations applying together, often from different countries. Most collaborative EU research calls require one. See the <a href="/blog/eic-pathfinder-open-vs-challenges">EIC Pathfinder</a> rules for an example.</li>
+  </ul>
+
+  <h2>What is free and what is not</h2>
+  <p>Searching the ledger, reading every record and following the link to the publisher is free and needs no account. The data is open: the code is on <a href="https://github.com/aiteklabs/grantledger" rel="noopener">GitHub</a> and the method is on the <a href="/methodology">methodology page</a>. The paid part, <a href="/pro">Pro</a>, screens every current call against your profile with fixed rules and emails you the new ones that pass; it also connects the ledger to <a href="/assistant">ChatGPT or Claude</a>. Nobody takes a share of the funding you obtain. If you would rather have the application written and managed for you, see <a href="/compare/granter-ai">how a full writing service compares</a>.</p>
+
+  <LiveCalls heading="Closing soonest across the ledger" limit={8} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>Counts on this page are computed from the ledger when the page is loaded.</li>
+    <li>The official sources and their licences: <a href="/methodology">methodology</a> and <a href="/coverage">coverage</a>.</li>
+    <li>EU calls: <a href="https://ec.europa.eu/info/funding-tenders/opportunities/portal/" rel="noopener">Funding and Tenders Portal</a>, European Commission.</li>
+  </ul>
+</Article>

@@ -1,0 +1,56 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="aws-preseed-explained">
+  <p class="lead">aws Preseed is a grant from Austria Wirtschaftsservice (aws), the Austrian federal promotional bank, for a first proof of concept before a company is founded or in its first six months. It has two lines: Innovative Solutions, up to 89,000 euros, and Deep Tech, up to 267,000 euros. Both pay 80 percent of the eligible costs and you can apply at any time.</p>
+
+  <h2>The two lines</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Innovative Solutions</th><th>Deep Tech</th></tr></thead>
+    <tbody>
+      <tr><td>For</td><td>Start-up projects with a social or ecological impact, in every sector except deep tech</td><td>Deep-tech start-up projects that turn research into a product</td></tr>
+      <tr><td>Funds</td><td>A first proof of concept</td><td>A proof of concept or a prototype, usually at technology readiness level 3</td></tr>
+      <tr><td>Maximum grant</td><td>89,000 euros; 100,000 with the gender bonus</td><td>267,000 euros; 300,000 with the gender bonus</td></tr>
+      <tr><td>Share of costs</td><td colspan="2">80 percent; 90 percent with the gender bonus</td></tr>
+      <tr><td>Your own share</td><td colspan="2">At least 10 percent in equity; 5 percent with the gender bonus</td></tr>
+      <tr><td>Project length</td><td>At most 1 year</td><td>Up to 2 years</td></tr>
+      <tr><td>Who applies</td><td>Founding teams before incorporation, or a company up to 6 months after its entry in the commercial register</td><td>Natural persons or micro-enterprises, before founding or up to 6 months after entry in the commercial register</td></tr>
+      <tr><td>Success rate shown by aws</td><td>About 10 percent</td><td>25 percent</td></tr>
+    </tbody>
+  </table>
+  <p>The money is a non-repayable grant, paid in instalments when agreed milestones are reached.</p>
+
+  <h2>Conditions to check</h2>
+  <ul>
+    <li><b>Innovative Solutions: the project must take place in Austria.</b></li>
+    <li><b>Deep Tech: the preseed company must be the applicant's only company.</b> aws also expects a market of several million euros in sales and later financing rounds of at least 5 million euros.</li>
+    <li><b>The six-month window is short.</b> After six months in the commercial register, the route is aws Seedfinancing, for companies up to five years old.</li>
+  </ul>
+
+  <h2>What the grant pays for</h2>
+  <p>Four kinds of cost in both lines: personnel, third parties such as external services, tangible and intangible investments, and other direct project costs such as materials. Vehicles are not paid in either line. The Innovative Solutions line also excludes real estate, costs made before the application, and VAT unless the company cannot deduct it.</p>
+
+  <h2>How to apply</h2>
+  <ol>
+    <li>Apply in the aws Fördermanager, the online portal of aws. Submission is open all year.</li>
+    <li>aws checks the application formally and on content. For Innovative Solutions you need a business plan of about 25 pages, a structured pitch deck, a plan of work packages and costs, proof of identity and the CVs of the team. For Deep Tech: proof of identity and CVs, then the evaluation.</li>
+    <li>An external jury decides, usually once per quarter. In the Deep Tech line the team pitches to the jury; life-science projects pass an ethics council first.</li>
+  </ol>
+
+  <h2>Timing: the funding period ends on 31 December 2026</h2>
+  <p>aws states that the current funding period runs out on 31 December 2026 and that the next one, for 2027 to 2029, is being prepared, with details to come. If you plan to apply in 2027, check the aws page for the new terms first. aws lists an information hour on the Innovative Solutions line on 9 December 2026.</p>
+
+  <h2>What comes after</h2>
+  <p>aws names its own follow-up programmes: aws Seedfinancing for companies up to five years old, aws Connect and aws Innovationsschutz. For deep tech it also points to the European Innovation Council; see <a href="/blog/eic-pathfinder-open-vs-challenges">EIC Pathfinder</a>.</p>
+
+  <LiveCalls heading="aws programmes in the ledger today" q="aws Preseed" country="AT" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>aws, Preseed and Seedfinancing overview (modified 3 August 2026): the four lines, the funding period. <a href="https://www.aws.at/aws-preseed-seedfinancing/" rel="noopener">aws.at</a></li>
+    <li>aws, Preseed Innovative Solutions (modified 10 November 2026): amounts, conditions, documents, information hour. <a href="https://www.aws.at/aws-preseed-innovative-solutions/" rel="noopener">aws.at</a></li>
+    <li>aws, Preseed Deep Tech (modified 30 July 2026): amounts, conditions, selection steps. <a href="https://www.aws.at/aws-preseed-deep-tech/" rel="noopener">aws.at</a></li>
+  </ul>
+</Article>

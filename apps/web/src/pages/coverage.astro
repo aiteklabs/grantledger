@@ -1,0 +1,71 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { localePath } from "~/i18n";
+import { coverage } from "~/i18n/pages/coverage";
+import { getSiteFacts, getSourceRegister } from "~/lib/db";
+import { COUNTRY_NAMES, SOURCE_NAMES, SOURCE_SCOPE, countryName, fmtDate, fmtInt } from "~/lib/format";
+export const prerender = false;
+
+const locale = Astro.locals.locale;
+const c = coverage[locale] ?? coverage.en!;
+const L = (href: string) => localePath(locale, href);
+const [facts, register] = await Promise.all([getSiteFacts(env.DB), getSourceRegister(env.DB)]);
+const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+// Active: the last crawl worked and ran in the last three days. Anything else is shown, not hidden.
+// Feed names carry their country ("Austria FFG") in English; the area column already says it, in the page locale.
+const area = (c: string) => (c === "EU" ? "EU-wide" : (COUNTRY_NAMES[c] ?? c));
+const areaLabel = (code: string) => (code === "EU" ? c.eu_wide : countryName(code, locale));
+const feedName = (s: (typeof register)[number]) => (SOURCE_NAMES[s.source] ?? s.source).replace(new RegExp(`^${area(s.country)} `), "");
+const health = (s: (typeof register)[number]) => (s.error ? ["no", c.status_attention] : !s.last_run || s.last_run < threeDaysAgo ? ["not_yet", c.status_stale] : ["fit", c.status_active]);
+---
+<Base title={c.meta_title} description={c.meta_description}>
+  <div class="wrap" style="padding-top:3rem;max-width:1000px">
+    <span class="kicker">{c.kicker}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{c.title}</h1>
+    <p class="lead">{c.lead}</p>
+
+    <div class="stats">
+      <div class="stat live"><a href={L("/grants")}><div class="n">{fmtInt(facts.active)}</div><div class="l">{c.tile_current}</div></a></div>
+      <div class="stat"><div class="n">{facts.countries}<span style="font-size:0.5em"> + EU</span></div><div class="l">{c.tile_countries}</div></div>
+      <div class="stat"><div class="n">{facts.sources}</div><div class="l">{c.tile_sources}</div></div>
+      <div class="stat"><div class="n" style="font-size:clamp(1.3rem,2.4vw,1.8rem)">{facts.refreshed ? fmtDate(facts.refreshed, locale) : c.never}</div><div class="l">{c.tile_refreshed}</div></div>
+    </div>
+
+    <h2>{c.official_title}</h2>
+    <p>{c.official_text}</p>
+
+    <h2>{c.adds_title}</h2>
+    <ul>
+      {c.adds_items.map((item) => <li>{item}</li>)}
+    </ul>
+    <p>{c.adds_note}</p>
+
+    <h2>{c.register_title}</h2>
+    <p class="muted small">{c.register_note}</p>
+    <table>
+      <thead><tr><th>{c.th_area}</th><th>{c.th_source}</th><th>{c.th_monitored}</th><th>{c.th_current}</th><th>{c.th_checked}</th><th>{c.th_status}</th></tr></thead>
+      <tbody>
+        {register.map((s) => {
+          const [tone, label] = health(s);
+          return (
+            <tr>
+              <td>{areaLabel(s.country)}</td>
+              <td><a href={L(`/grants?source=${s.source}`)}>{feedName(s)}</a></td>
+              <td class="small">{SOURCE_SCOPE[s.source] ?? ""}</td>
+              <td class="mono">{fmtInt(s.current)}</td>
+              <td class="mono small">{s.last_seen ? fmtDate(s.last_seen, locale) : c.never}</td>
+              <td><span class={`tag ${tone}`} title={s.error ?? undefined}>{label}</span></td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+
+    <h2>{c.changes_title}</h2>
+    <p>{c.changes_text.replace("{attention}", c.status_attention).replace("{stale}", c.status_stale)}</p>
+
+    <h2>{c.wrong_title}</h2>
+    <p>{c.wrong_before}<a href="https://github.com/aiteklabs/grantledger/issues" rel="noopener">{c.wrong_issue}</a>{c.wrong_mid}<a href="mailto:contact@aiteklabs.com">contact@aiteklabs.com</a>{c.wrong_after}</p>
+  </div>
+</Base>
