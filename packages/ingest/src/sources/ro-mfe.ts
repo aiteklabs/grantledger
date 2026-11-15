@@ -1,9 +1,12 @@
 import type { Grant } from "@grantledger/schema";
-import { decodeEntities, stripHtml } from "../util";
+import { decodeEntities, londonIso, statusFromDates, stripHtml } from "../util";
 import type { Page, Source } from "./types";
 
 // Romania, Ministry of European Investments and Projects (mfe.gov.ro): Atom feed of call announcements, 300 per page.
 // The HTML site sits behind a browser challenge; the feed is open. Announcements carry no structured dates or budgets.
+// A call launch states its submission window in one sentence ("Sistemul informatic MySMIS2021 se deschide în data de
+// 16.11.2026, ora 16.00, până în data de 15.01.2027, ora 16.00"). Only those announcements get dates; the rest of the
+// feed (consultations, result lists, clarifications) stays without dates and so never enters the ledger.
 const FEED = "https://mfe.gov.ro/category/ultimele-apeluri-prima-pagina/feed/";
 const LICENSE = "MIPE public announcements (mfe.gov.ro)";
 const MAX_PAGES = 3;
@@ -29,7 +32,18 @@ function parseAtom(xml: string): Entry[] {
   return out;
 }
 
+const DATE = String.raw`(\d{1,2})\.(\d{1,2})\.(\d{4})(?:,?\s*ora\s+(\d{1,2})[.:](\d{2}))?`;
+const WINDOW = new RegExp(String.raw`se deschide\s+[îȋi]n\s+data\s+de\s+${DATE}[\s\S]{0,60}?p[âa]n[ăa]\s+[îȋi]n\s+data\s+de\s+${DATE}`, "i");
+
+// Romanian wall-clock time as ISO in UTC. Romania is two hours ahead of the UK all year.
+function roIso(day: string, month: string, year: string, hour: string | undefined, minute: string | undefined, fallbackHour: number, fallbackMinute: number): string {
+  return londonIso(Number(year), Number(month) - 1, Number(day), (hour ? Number(hour) : fallbackHour) - 2, minute ? Number(minute) : fallbackMinute);
+}
+
 function normalize(en: Entry): Grant {
+  const w = en.content.match(WINDOW);
+  const opens = w ? roIso(w[1]!, w[2]!, w[3]!, w[4], w[5], 0, 0) : en.published;
+  const closes = w ? roIso(w[6]!, w[7]!, w[8]!, w[9], w[10], 23, 59) : null;
   const programme = en.categories.find((c) => /Anun.uri (AM)?[A-Z]+ 2021-2027|PNRR/.test(c)) ?? en.categories[0] ?? "";
   const text = `${en.title} ${en.content}`.toLowerCase();
   const bens = new Set<Grant["beneficiary_types"][number]>();
@@ -59,9 +73,9 @@ function normalize(en: Entry): Grant {
     amount_max: null,
     budget_total: null,
     currency: "RON",
-    status: "unknown",
-    opens_at: en.published,
-    closes_at: null,
+    status: w ? statusFromDates(opens, closes) : "unknown",
+    opens_at: opens,
+    closes_at: closes,
     documents: [],
     source_updated_at: en.updated,
   };

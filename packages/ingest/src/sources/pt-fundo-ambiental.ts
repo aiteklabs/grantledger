@@ -41,7 +41,8 @@ function parseCards(html: string): Card[] {
   for (const section of body.split(/<section\b/).slice(1)) {
     const category = stripHtml(section.match(/<h2[^>]*>([\s\S]*?)<\/h2>/)?.[1] ?? "").replace(/\s+/g, " ").trim();
     for (const block of section.split(/<div style="margin:\s?20px 0;/).slice(1)) {
-      const path = block.match(/href="\/?([^"#]+\.aspx)"[^>]*>\s*Consultar/)?.[1];
+      // Most cards link with a site-relative path; a few carry the full address of the same site.
+      const path = block.match(/href="(?:https?:\/\/www\.fundoambiental\.pt)?\/?([^"#]+\.aspx)"[^>]*>\s*Consultar/)?.[1];
       const title = stripHtml(block.match(/<h3[^>]*>([\s\S]*?)<\/h3>/)?.[1] ?? "").replace(/\s+/g, " ").trim();
       // Cards without a deadline line are not calls (the PRR hub lists its general documentation the same way).
       if (!path || !title || !/Candidaturas at[ée]:/.test(block)) continue;
@@ -61,7 +62,13 @@ function parseCards(html: string): Card[] {
       });
     }
   }
-  return out;
+  // A closed call and its follow-up round can share one detail page, so one id: the card that is not closed wins.
+  const bySlug = new Map<string, Card>();
+  for (const card of out) {
+    const seen = bySlug.get(card.slug);
+    if (!seen || /ENCERRAD/.test(seen.label)) bySlug.set(card.slug, card);
+  }
+  return [...bySlug.values()];
 }
 
 // Text under an upper-case heading, up to the next upper-case heading line.
