@@ -13,13 +13,13 @@
   },
   "dependencies": {
     "@grantledger/schema": "workspace:*",
-    "entities": "^6.0.1",
+    "entities": "^9.0.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "^4.1.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260926.1",
-    "typescript": "^5.9.0",
-    "wrangler": "^4.85.0"
+    "@cloudflare/workers-types": "^5.20261115.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.162.0"
   }
 }

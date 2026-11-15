@@ -9,9 +9,9 @@
     "build:json": "bun scripts/build-json-schema.ts"
   },
   "dependencies": {
-    "zod": "^4.1.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.0"
+    "typescript": "^6.0.3"
   }
 }
