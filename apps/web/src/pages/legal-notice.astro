@@ -1,0 +1,37 @@
+---
+import Base from "~/layouts/Base.astro";
+import { legalNotice } from "~/i18n/pages/legal-notice";
+export const prerender = false;
+const c = legalNotice[Astro.locals.locale] ?? legalNotice.en;
+---
+<Base title={c.metaTitle} description={c.metaDescription}>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">{c.kicker}</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{c.title}</h1>
+
+    <h2>{c.operatorTitle}</h2>
+    <p>{c.operatorBody} {c.websiteLabel} <a href="https://aiteklabs.com" rel="noopener">aiteklabs.com</a>. {c.contactLabel} <a href="mailto:contact@aiteklabs.com">contact@aiteklabs.com</a>.</p>
+
+    <h2>{c.hostingTitle}</h2>
+    <p>{c.hostingBody}</p>
+
+    <h2>{c.independenceTitle}</h2>
+    <p>{c.independenceBody}</p>
+
+    <h2>{c.warrantyTitle}</h2>
+    <p>{c.warrantyBody}</p>
+
+    <h2>{c.licensesTitle}</h2>
+    <ul>
+      <li>{c.licenseCode} <a href="https://github.com/aiteklabs/grantledger" rel="noopener">github.com/aiteklabs/grantledger</a>.</li>
+      <li>{c.licenseData}</li>
+      <li>{c.licenseSource.before} <a href="/methodology">{c.licenseSource.link}</a>{c.licenseSource.after}</li>
+    </ul>
+
+    <h2>{c.trademarksTitle}</h2>
+    <p>{c.trademarksBody}</p>
+
+    <h2>{c.reportingTitle}</h2>
+    <p>{c.reportingBefore} <a href="mailto:contact@aiteklabs.com">contact@aiteklabs.com</a> {c.reportingOr} <a href="https://github.com/aiteklabs/grantledger/issues" rel="noopener">{c.reportingIssue}</a>.</p>
+  </div>
+</Base>

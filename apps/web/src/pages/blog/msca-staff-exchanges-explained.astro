@@ -1,0 +1,50 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="msca-staff-exchanges-explained">
+  <p class="lead">MSCA Staff Exchanges, part of the Marie Skłodowska-Curie Actions in Horizon Europe, funds short secondments of staff between organisations in different countries and in different sectors. A consortium of at least three organisations in three countries applies, and it must mix academic and non-academic partners. The grant pays an allowance on top of the salary each person keeps.</p>
+
+  <h2>Who can apply</h2>
+  <ul>
+    <li><b>A consortium, not a person.</b> Universities, research institutions, businesses, SMEs and other non-academic organisations apply together.</li>
+    <li><b>At least three organisations in three different countries.</b> Two of them must be in different EU member states or countries associated to Horizon Europe.</li>
+    <li><b>Both sectors.</b> The consortium must include organisations from the academic and from the non-academic sector.</li>
+    <li><b>Partners from the rest of the world are welcome.</b> Above the minimum, organisations from any country can join, and the European Commission encourages participation from countries that are not associated.</li>
+  </ul>
+
+  <h2>Who can be seconded</h2>
+  <p>Staff involved in research and innovation at a participating organisation, of any nationality: researchers at any career stage, from PhD candidates to postdoctoral researchers, and also administrative, technical and managerial staff. Each organisation chooses whom it sends, and the person returns to it after the secondment.</p>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Project length</td><td>Up to four years</td></tr>
+      <tr><td>One secondment</td><td>From one month to one year</td></tr>
+      <tr><td>For the seconded person</td><td>A top-up allowance for travel, accommodation and subsistence, on top of the salary paid by their own organisation; a special needs allowance where it applies</td></tr>
+      <tr><td>For the organisations</td><td>Funding for research, training and networking activities, and for management and indirect costs</td></tr>
+      <tr><td>Work programme</td><td>MSCA work programme 2026-2027</td></tr>
+    </tbody>
+  </table>
+  <p>The amounts per person and per month, the call dates and the budget are set in the call documents on the Funding and Tenders Portal, not on the programme page. The calls in the ledger are listed below.</p>
+
+  <h2>What it is good for</h2>
+  <p>The Commission describes the aim as lasting collaboration between academic and non-academic organisations, in particular SMEs, in Europe and beyond. In practice it suits a group of partners who already want to work together and need their people to spend time in each other's labs and workshops. It does not pay salaries: each person stays employed and paid by the organisation that sends them.</p>
+
+  <h2>How to apply</h2>
+  <ol>
+    <li>Find partners and read the call page on the EU Funding and Tenders Portal. It carries the work programme, the guide for applicants and the forms.</li>
+    <li>Check the minimum: three organisations, three countries, both sectors.</li>
+    <li>Submit through the portal between the opening date and the deadline of the call.</li>
+  </ol>
+
+  <LiveCalls heading="MSCA calls in the ledger today" q="MSCA Staff Exchanges" country="EU" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>European Commission, Marie Skłodowska-Curie Actions, Staff Exchanges (last updated 30 September 2026): objective, who can apply, what the funding covers, how to apply. <a href="https://marie-sklodowska-curie-actions.ec.europa.eu/actions/staff-exchanges" rel="noopener">marie-sklodowska-curie-actions.ec.europa.eu</a></li>
+    <li>European Commission, Funding and Tenders Portal: call documents. <a href="https://ec.europa.eu/info/funding-tenders/opportunities/portal/" rel="noopener">ec.europa.eu</a></li>
+  </ul>
+</Article>

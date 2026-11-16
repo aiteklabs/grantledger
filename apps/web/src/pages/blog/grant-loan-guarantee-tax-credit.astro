@@ -1,0 +1,61 @@
+---
+import { env } from "cloudflare:workers";
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+import { searchGrants } from "~/lib/db";
+import { FUNDING_TYPE_LABELS, fmtInt } from "~/lib/format";
+export const prerender = false;
+
+// Current calls per funding type, counted when the page is loaded.
+const TYPES = ["grant", "loan", "guarantee", "tax_credit", "voucher", "equity", "prize", "procurement"];
+const counts = await Promise.all(TYPES.map(async (type) => ({ type, n: (await searchGrants(env.DB, { type, pageSize: 5 })).total })));
+---
+<Article slug="grant-loan-guarantee-tax-credit">
+  <p class="lead">Public funding is not only grants. A grant is money you do not repay. A loan is repaid, a guarantee helps you borrow from a bank, a tax credit lowers the tax you owe, and a voucher pays a supplier for you. The right one depends on when you need the money and on what you can pay first yourself, not on the largest headline amount.</p>
+
+  <h2>The types, side by side</h2>
+  <table>
+    <thead><tr><th>Type</th><th>What you get</th><th>Do you repay</th><th>An example explained here</th></tr></thead>
+    <tbody>
+      <tr><td>Grant</td><td>Money for a defined project, as a share of its costs</td><td>No, if you follow the rules of the grant</td><td><a href="/blog/aws-preseed-explained">aws Preseed</a>, <a href="/blog/eic-pathfinder-open-vs-challenges">EIC Pathfinder</a></td></tr>
+      <tr><td>Loan</td><td>Money from a public lender, often on better terms than the market</td><td>Yes, with interest</td><td></td></tr>
+      <tr><td>Guarantee</td><td>The state covers part of a bank loan, so the bank lends with less collateral</td><td>You repay the bank, and pay a fee for the guarantee</td><td><a href="/blog/bmkb-borgstellingskrediet-explained">BMKB</a></td></tr>
+      <tr><td>Tax credit or deduction</td><td>Less tax on your profit, for an investment or a project you carried out</td><td>No</td><td><a href="/blog/mia-vamil-explained">MIA and Vamil</a>, <a href="/blog/skattefunn-explained">SkatteFUNN</a></td></tr>
+      <tr><td>Voucher</td><td>A small, fixed-size grant for one narrow purpose</td><td>No</td><td><a href="/blog/ffg-oeko-scheck-explained">Öko-Scheck</a></td></tr>
+      <tr><td>Equity</td><td>A public investor buys a share of your company</td><td>No, but you give up a share</td><td></td></tr>
+      <tr><td>Prize</td><td>Money for a result, awarded after a competition</td><td>No</td><td></td></tr>
+      <tr><td>Procurement</td><td>A public body buys your product or your research as a customer</td><td>No: it is a sale</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>What the ledger holds today, by type</h2>
+  <table>
+    <thead><tr><th>Type</th><th>Current calls</th></tr></thead>
+    <tbody>
+      {counts.map((c) => <tr><td><a href={`/grants?type=${c.type}`}>{FUNDING_TYPE_LABELS[c.type as keyof typeof FUNDING_TYPE_LABELS] ?? c.type}</a></td><td>{fmtInt(c.n)}</td></tr>)}
+    </tbody>
+  </table>
+  <p class="small muted">Counted from the ledger when this page is loaded. A call can carry more than one type.</p>
+
+  <h2>Four questions that pick the type</h2>
+  <ol>
+    <li><b>Do you need the money before you spend, or can you spend first?</b> Many grants pay in instalments against milestones or reported costs, so part of the project is paid from your own cash first. A tax deduction arrives only with the tax return. A loan or a guarantee puts cash in your account at the start.</li>
+    <li><b>Do you make a profit?</b> A tax deduction is worth something only if there is tax to reduce, unless the scheme pays out to loss-making companies. Norway's <a href="/blog/skattefunn-explained">SkatteFUNN</a> does; read the rule of each scheme.</li>
+    <li><b>Can you carry your own share?</b> A grant rarely covers all costs. The Austrian <a href="/blog/aws-preseed-explained">aws Preseed</a> pays 80 percent and asks for the rest in equity; the <a href="/blog/ffg-oeko-scheck-explained">Öko-Scheck</a> pays 80 percent of a small project.</li>
+    <li><b>Is it a project or an investment?</b> Research and development mostly gets grants and tax credits. Machines, buildings and vehicles mostly get loans, guarantees and tax deductions such as the Dutch <a href="/blog/mia-vamil-explained">MIA and Vamil</a>.</li>
+  </ol>
+
+  <h2>They add up, within limits</h2>
+  <p>Several types can support the same company, and sometimes the same project, but public support is capped. Small aid of any type counts toward the <a href="/blog/de-minimis-aid-explained">de minimis ceiling</a> when it is granted under that rule; for a loan or a guarantee, what counts is the advantage over market terms, not the amount borrowed. Larger schemes cap the total public share of a project's costs: in SkatteFUNN, grants received for the same project can reduce the deduction. Declare every other support in each application.</p>
+
+  <h2>How to search by type</h2>
+  <p>On the <a href="/grants">ledger</a>, filter by type and by your country, then add a word for what you do. Every record states its type or types, and the link to the official page where the terms are set.</p>
+
+  <LiveCalls heading="Guarantee schemes in the ledger today" q="guarantee" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>The definitions follow the funding types of the ledger; the counts are computed from it when the page is loaded. See the <a href="/methodology">methodology</a>.</li>
+    <li>The examples and their figures come from the guides linked in the table, each with its official sources.</li>
+  </ul>
+</Article>
