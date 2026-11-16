@@ -38,7 +38,7 @@ jobs:
           status=0
           for s in $(printf '%s\n' $SOURCES | awk '!seen[$0]++'); do
             case "$s" in
-              *[!a-z_]*) echo "invalid source id: $s"; status=1; continue ;;
+              *[!a-z0-9_]*) echo "invalid source id: $s"; status=1; continue ;;
             esac
             echo "== $s"
             # A publisher that hangs must not use up the job: ten minutes per source.
