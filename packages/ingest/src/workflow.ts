@@ -87,7 +87,10 @@ export class IngestWorkflow extends WorkflowEntrypoint<Env, IngestParams> {
     if (!since && maxPages === 0) {
       await step.do("reconcile missing calls", async () => {
         const run = await this.env.DB.prepare("SELECT started_at, upserted FROM ingest_runs WHERE id = ?").bind(runId).first<{ started_at: string; upserted: number }>();
-        const total = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM grants WHERE source = ? AND status IN ('open', 'forthcoming')").bind(sourceId).first<{ n: number }>();
+        // Calls past their deadline are left out of the count: the publisher has stopped listing them, and counted
+        // in, they kept a small feed under the 80 % mark for good, so its vanished calls were never closed
+        // (dk_novo_nordisk: 12 such rows against 30 listed calls).
+        const total = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM grants WHERE source = ? AND status IN ('open', 'forthcoming') AND (closes_at IS NULL OR closes_at >= ?)").bind(sourceId, run?.started_at ?? "").first<{ n: number }>();
         if (!run || !total || run.upserted < total.n * 0.8) return;
         await this.env.DB.prepare("UPDATE grants SET status = 'closed' WHERE source = ? AND status IN ('open', 'forthcoming') AND last_seen_at < ?").bind(sourceId, run.started_at).run();
       });

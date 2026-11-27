@@ -26,11 +26,15 @@ const clean = (html: string): string => stripHtml(html.replace(/\s+/g, " ")).rep
 function parseList(page: string): { rows: Row[]; hasNext: boolean } {
   const html = page.replace(/\s+/g, " ");
   const rows: Row[] = [];
-  for (const m of html.matchAll(/<article class="node node--type-call node--view-mode-teaser">([\s\S]*?)<\/article>/g)) {
+  // The card's tag carries more than these three classes since November 2026 (a "teaser" class and a component id).
+  for (const m of html.matchAll(/<article class="node node--type-call node--view-mode-teaser[^"]*"[^>]*>([\s\S]*?)<\/article>/g)) {
     const a = m[1] as string;
     const link = a.match(/<a href="(\/en\/[^"]+)" rel="bookmark">([\s\S]*?)<\/a>/);
     if (!link) continue;
-    const items = (name: string) => [...a.matchAll(new RegExp(`item-field-${name}">([^<]*)<`, "g"))].map((x) => clean(x[1] as string)).filter(Boolean);
+    // Each field is a <dt> label and a <dd> value; a value with several entries is a list. The country carries its
+    // code ("Poland (PL)"), dropped here.
+    const value = (name: string) => a.match(new RegExp(`field--name-field-${name}\\b[\\s\\S]*?<dd>([\\s\\S]*?)<\\/dd>`))?.[1] ?? "";
+    const items = (name: string) => (value(name).includes("<li>") ? [...value(name).matchAll(/<li>([\s\S]*?)<\/li>/g)].map((x) => x[1] as string) : [value(name)]).map((x) => clean(x).replace(/ \([A-Z]{2}\)$/, "")).filter(Boolean);
     rows.push({
       path: link[1] as string,
       title: clean(link[2] as string),
@@ -38,8 +42,8 @@ function parseList(page: string): { rows: Row[]; hasNext: boolean } {
       programmes: items("programmes"),
       deadline: a.match(/field--name-field-date[\s\S]*?<time datetime="([^"]+)"/)?.[1] ?? null,
       rolling: /field--name-field-rolling-call/.test(a),
-      type: clean(a.match(/field--name-field-is-bilateral[^>]*>([^<]*)</)?.[1] ?? ""),
-      state: clean(a.match(/field--name-field-open-for-applications[^>]*>([^<]*)</)?.[1] ?? ""),
+      type: clean(value("is-bilateral")),
+      state: clean(value("open-for-applications")),
     });
   }
   return { rows, hasNext: /pager__item--next/.test(html) };

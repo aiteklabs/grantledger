@@ -146,19 +146,21 @@ function dayEnd(date: string): string {
 async function fetchScheme(id: number): Promise<{ version: PublishedVersion | null; completed: boolean; updated: string | null }> {
   // From datacenter networks the publisher's gateway answers 404 or 504 for a scheme page now and then, and serves
   // the same page a moment later: three tries before the crawl gives up.
-  let html = "";
   for (let attempt = 0; ; attempt++) {
     try {
-      html = await fetchHtml(`${HOST}/ordning/${dtId(id)}`, UA);
-      break;
+      const html = await fetchHtml(`${HOST}/ordning/${dtId(id)}`, UA);
+      const json = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1];
+      const scheme = json ? (JSON.parse(json) as SchemePage).props?.pageProps?.grant?.grantScheme : null;
+      // Now and then the page arrives with status 200 and no scheme in it. Stored from the search item alone, the
+      // record lost its texts and amount for a night and got them back on the next crawl: two changes, two
+      // enrichments. Such a page counts as a failed try.
+      if (!scheme) throw new Error(`Tilskudd.no served ${dtId(id)} without its scheme data`);
+      return { version: scheme.year?.publishedVersion ?? null, completed: scheme.completed ?? false, updated: scheme.year?.updated ?? null };
     } catch (err) {
       if (attempt === 2) throw err;
       await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
     }
   }
-  const json = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1];
-  const scheme = json ? (JSON.parse(json) as SchemePage).props?.pageProps?.grant?.grantScheme : null;
-  return { version: scheme?.year?.publishedVersion ?? null, completed: scheme?.completed ?? false, updated: scheme?.year?.updated ?? null };
 }
 
 function normalize(item: SearchItem, detail: Awaited<ReturnType<typeof fetchScheme>>): Grant {

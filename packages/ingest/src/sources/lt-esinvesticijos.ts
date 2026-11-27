@@ -41,7 +41,10 @@ function field(text: string, label: string): string {
 async function detail(slug: string) {
   const res = await fetch(`${SITE}/kvietimai/${slug}`, { headers: UA });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const html = await res.text();
+  // The table of simplified cost rates ("Taikomi supaprastintai apmokamų išlaidų dydžiai") lists its rows in a
+  // different order from one request to the next, so every call that has one looked changed and was enriched again
+  // on every crawl. The rows of each table are sorted before the text is taken.
+  const html = (await res.text()).replace(/(<tbody[^>]*>)([\s\S]*?)(<\/tbody>)/g, (_, open: string, rows: string, close: string) => `${open}${(rows.match(/<tr[\s\S]*?<\/tr>/g) ?? []).sort().join("")}${close}`);
   const text = html
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, " ")

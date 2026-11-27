@@ -26,6 +26,16 @@ export function stripHtml(s: string): string {
     .trim();
 }
 
+// A slug taken from a link is percent-encoded when it holds more than ASCII ("%e2%80%89"). A record id keeps the
+// characters themselves: with a "%" in it, the address of the record's page on the site does not resolve.
+export function decodeSlug(slug: string): string {
+  try {
+    return decodeURIComponent(slug).trim();
+  } catch {
+    return slug;
+  }
+}
+
 export function toIso(value: string | null | undefined): string | null {
   if (!value) return null;
   const d = new Date(value);

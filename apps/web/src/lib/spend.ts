@@ -1,13 +1,24 @@
 // Model spend guard. Every model call appends its token counts to model_usage; the month-to-date cost is computed
-// from that ledger and compared to the limit kept in settings. Prices are Gemini 3.8 Flash list prices per million tokens.
+// from that ledger and compared to the limit kept in settings. Prices are Gemini 3.8 Flash list prices per million tokens:
+// the introductory prices, which end on 2026-12-31. From 2027-01-01 both are twice as high (Google's pricing page,
+// read 2026-11-27).
 export const PRICE_IN_USD_PER_M = 0.75;
 export const PRICE_OUT_USD_PER_M = 3.75;
+export const PRICE_DOUBLES_FROM_MONTH = "2027-01";
 export const DEFAULT_LIMIT_USD = 10;
 
 export interface Spend { month: string; input_tokens: number; output_tokens: number; usd: number; limit_usd: number; blocked: boolean; enrichments: number; prefills: number }
 
-export function costUsd(inputTokens: number, outputTokens: number): number {
-  return (inputTokens / 1e6) * PRICE_IN_USD_PER_M + (outputTokens / 1e6) * PRICE_OUT_USD_PER_M;
+// Prices per million tokens in a month given as YYYY-MM.
+export function prices(month: string): { input: number; output: number } {
+  const factor = month >= PRICE_DOUBLES_FROM_MONTH ? 2 : 1;
+  return { input: PRICE_IN_USD_PER_M * factor, output: PRICE_OUT_USD_PER_M * factor };
+}
+
+// `month` is the month the tokens were used in.
+export function costUsd(inputTokens: number, outputTokens: number, month: string): number {
+  const p = prices(month);
+  return (inputTokens / 1e6) * p.input + (outputTokens / 1e6) * p.output;
 }
 
 export async function getLimitUsd(db: D1Database): Promise<number> {
@@ -29,7 +40,7 @@ export async function monthSpend(db: D1Database): Promise<Spend> {
   ]);
   const input = row?.i ?? 0;
   const output = row?.o ?? 0;
-  const usd = costUsd(input, output);
+  const usd = costUsd(input, output, month);
   return { month, input_tokens: input, output_tokens: output, usd, limit_usd: limit, blocked: usd >= limit, enrichments: row?.e ?? 0, prefills: row?.p ?? 0 };
 }
 

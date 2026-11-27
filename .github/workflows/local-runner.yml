@@ -26,22 +26,30 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           INGEST_URL: ${{ secrets.INGEST_URL }}
           SOURCES: ${{ github.event.inputs.sources || 'se_vinnova be_vlaio' }}
-        # Every source runs even when one fails; the job still fails at the end so a broken crawl is visible.
+        # Every source runs even when one fails; the job still fails at the end so a broken crawl of a source
+        # this runner owns is visible.
         run: |
           # On the nightly schedule, also crawl every feed whose last Worker crawl failed: a publisher that starts
           # refusing Cloudflare is refreshed from here without a code change. A failed lookup only skips this.
+          failing=""
           if [ "$GITHUB_EVENT_NAME" = schedule ]; then
             failing=$(curl -fsS -m 30 "$INGEST_URL/failing" | jq -r '.[]' | tr '\n' ' ') || failing=""
             echo "failed on the Worker: ${failing:-none}"
-            SOURCES="$SOURCES $failing"
           fi
           status=0
-          for s in $(printf '%s\n' $SOURCES | awk '!seen[$0]++'); do
+          for s in $(printf '%s\n' $SOURCES $failing | awk '!seen[$0]++'); do
             case "$s" in
               *[!a-z0-9_]*) echo "invalid source id: $s"; status=1; continue ;;
             esac
             echo "== $s"
             # A publisher that hangs must not use up the job: ten minutes per source.
-            timeout 10m bun scripts/push-local.ts "$s" || { echo "$s failed"; status=1; }
+            timeout 10m bun scripts/push-local.ts "$s" && continue
+            # A feed that failed on the Worker and fails from here too (publisher down, or refusing every network)
+            # is already listed on /failing and on the status page. It gives a warning: a job that is red every
+            # night for a host nobody can reach hides the night a source of this runner breaks.
+            case " $SOURCES " in
+              *" $s "*) echo "$s failed"; status=1 ;;
+              *) echo "::warning::$s failed on the Worker and from this runner" ;;
+            esac
           done
           exit $status
