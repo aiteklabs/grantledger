@@ -11,5 +11,5 @@
   ],
   "r2_buckets": [{ "binding": "RAW", "bucket_name": "freegrant-raw" }],
   "workflows": [{ "name": "freegrant-ingest", "binding": "INGEST", "class_name": "IngestWorkflow" }],
-  "vars": { "PAGES_PER_INSTANCE": "50", "WEB_URL": "https://<your-domain>" }
+  "vars": { "PAGES_PER_INSTANCE": "200", "WEB_URL": "https://<your-domain>" }
 }

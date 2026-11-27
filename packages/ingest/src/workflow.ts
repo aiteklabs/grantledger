@@ -19,11 +19,15 @@ const RETRY_DELAY = "1 hour";
 
 // One instance crawls up to PAGES_PER_INSTANCE pages, then spawns a continuation instance.
 // This keeps every instance under the Workflows step limit and lets a 650k-record crawl resume.
+// The chain must stay short: each continuation runs one level deeper than the instance that spawned it, and in the
+// 14th instance of a chain the raw archive write to R2 fails with "exceeded the maximum Workers subrequest depth"
+// (us_grants_gov, 838 pages, 2026-11-27). At 200 pages per instance the longest feed needs five instances. The step
+// limit is 10,000 per instance since March 2026; it was 1,024 when 50 pages was chosen.
 export class IngestWorkflow extends WorkflowEntrypoint<Env, IngestParams> {
   async run(event: WorkflowEvent<IngestParams>, step: WorkflowStep) {
     const { source: sourceId, since, maxPages = 0 } = event.payload;
     const source = sources[sourceId];
-    const perInstance = Number(this.env.PAGES_PER_INSTANCE ?? "50");
+    const perInstance = Number(this.env.PAGES_PER_INSTANCE ?? "200");
     const runId = event.payload.runId ?? event.instanceId;
     let cursor: string | null = event.payload.cursor ?? source.start(since);
 
