@@ -1,5 +1,5 @@
 import type { Grant } from "@grantledger/schema";
-import { fetchJson, stripHtml } from "../util";
+import { decodeSlug, fetchJson, stripHtml } from "../util";
 import type { Page, Source } from "./types";
 
 // Belgium, Wallonia: 1890.be (SOWALFIN, Région wallonne), the official directory of business aid. JSON API, 15 per page,
@@ -47,17 +47,22 @@ export const be1890: Source = {
     const grants: Grant[] = [];
     const raws: Page["raws"] = [];
     for (const it of list.content) {
+      // The list mixes aid schemes ("solution") with online tools ("tool": a business plan template, a directory of
+      // accountants). A tool is no funding and has no page under /solution/, so it is left out.
+      if (it.kind === "tool") continue;
       const slug = (it.link?.url ?? "").split("/").filter(Boolean).pop();
       if (!slug) continue;
-      const detail = await fetchJson<unknown>(`${API}/${encodeURIComponent(slug)}`, { headers: UA }).catch(() => null);
+      const id = decodeSlug(slug);
+      // The slug comes from a link and is already encoded; encoded again, the detail was not found.
+      const detail = await fetchJson<unknown>(`${API}/${slug}`, { headers: UA }).catch(() => null);
       const texts: string[] = [];
       if (detail) collectText(detail, texts);
       const summary = [...new Set(texts)].join("\n\n").slice(0, 12000);
       const text = `${it.title} ${summary}`;
       grants.push({
-        id: `be_1890:${slug}`,
+        id: `be_1890:${id}`,
         source: "be_1890",
-        source_id: slug,
+        source_id: id,
         source_url: `${SITE}/solution/${slug}/`,
         source_license: LICENSE,
         title: stripHtml(it.title),
@@ -80,7 +85,7 @@ export const be1890: Source = {
         documents: [],
         source_updated_at: it.date ? `${it.date}T00:00:00.000Z` : null,
       });
-      raws.push({ source_id: slug, payload: { item: it, summary: summary.slice(0, 1500) } });
+      raws.push({ source_id: id, payload: { item: it, summary: summary.slice(0, 1500) } });
     }
     return { grants, raws, next: list.is_last_page || list.content.length === 0 ? null : String(page + 1) };
   },

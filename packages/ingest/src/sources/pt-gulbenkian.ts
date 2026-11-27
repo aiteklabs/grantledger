@@ -1,5 +1,5 @@
 import type { Grant } from "@grantledger/schema";
-import { decodeEntities, fetchHtml, mapLimit, statusFromDates, stripHtml } from "../util";
+import { decodeEntities, decodeSlug, fetchHtml, mapLimit, statusFromDates, stripHtml } from "../util";
 import type { Page, Source } from "./types";
 
 // Portugal, Fundação Calouste Gulbenkian: scholarships ("Bolsas") and grants to organisations ("Apoios"). The archive
@@ -31,7 +31,7 @@ function parseCards(html: string): Card[] {
     const title = clean(block.match(/fcg-card__title">([\s\S]*?)<\/h3>/)?.[1] ?? "");
     if (!title) continue;
     out.push({
-      slug: m[2]!,
+      slug: decodeSlug(m[2]!),
       url: m[1]!,
       title,
       teaser: clean(block.match(/fcg-card__description">([\s\S]*?)<\/p>/)?.[1] ?? ""),

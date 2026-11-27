@@ -35,7 +35,9 @@ function parseCards(html: string): Card[] {
     const inner = m[2] as string;
     const link = inner.match(/<a[^>]*href="https:\/\/www\.kulturdirektoratet\.no\/tilskuddsordninger\/([^"/]+)\/?"[^>]*>([\s\S]*?)<\/a>/);
     if (!link) continue;
-    const labels = [...inner.matchAll(/<span class="text-sm font-medium">([\s\S]*?)<\/span>/g)].map((s) => line(s[1]));
+    // The card also counts down to the deadline ("4 dager igjen": 4 days left). That label changed every day, so
+    // every open scheme with a deadline looked changed and was enriched again on every crawl.
+    const labels = [...inner.matchAll(/<span class="text-sm font-medium">([\s\S]*?)<\/span>/g)].map((s) => line(s[1])).filter((l) => !/\bigjen$/.test(l));
     cards.push({ slug: link[1] as string, lang: m[1] as string, chip: labels[0] ?? "", when: labels.slice(1).join(" "), title: line(link[2]), teaser: line(inner.match(/<p[^>]*>([\s\S]*?)<\/p>/)?.[1]) });
   }
   return cards;

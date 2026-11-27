@@ -55,8 +55,18 @@ function fundingTypes(text: string): Grant["funding_types"] {
 }
 
 async function detail(url: string): Promise<{ status: Grant["status"]; text: string }> {
-  const res = await fetch(url, { headers: { "user-agent": "grantledger/0.1 (+https://grantledger.eu)" } });
-  if (!res.ok) return { status: "unknown", text: "" };
+  // A page that failed once was stored as a scheme without text or status: it left the site for a night, came back
+  // on the next crawl and was enriched twice (11 times in November 2026). Three tries. After that only a page that
+  // is gone (404, 410) is taken as such; any other failure stops the crawl, so the stored record stays as it is.
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    res = await fetch(url, { headers: { "user-agent": "grantledger/0.1 (+https://grantledger.eu)" } }).catch(() => null);
+    if (res && (res.ok || res.status === 404 || res.status === 410)) break;
+    await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+  }
+  if (!res) throw new Error(`No answer from ${url}`);
+  if (res.status === 404 || res.status === 410) return { status: "unknown", text: "" };
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const html = await res.text();
   const full = stripHtml(html);
   const status: Grant["status"] = /Open voor aanvragen/i.test(full) ? "open" : /Binnenkort open/i.test(full) ? "forthcoming" : /Gesloten|niet meer mogelijk/i.test(full) ? "closed" : "unknown";
@@ -111,7 +121,7 @@ export const nlRvo: Source = {
   async fetchPage(cursor): Promise<Page> {
     const page = Number(cursor);
     const items = await fetchJson<Item[]>(`${API}?page=${page}`);
-    const details = await mapLimit(items, 6, (it) => detail(it.url.startsWith("http") ? it.url : `${SITE}${it.url}`).catch(() => ({ status: "unknown" as const, text: "" })));
+    const details = await mapLimit(items, 6, (it) => detail(it.url.startsWith("http") ? it.url : `${SITE}${it.url}`));
     const grants = items.map((it, i) => normalize(it, details[i]!));
     return { grants, raws: items.map((it, i) => ({ source_id: it.id, payload: { item: it, status: details[i]!.status } })), next: items.length > 0 ? String(page + 1) : null };
   },

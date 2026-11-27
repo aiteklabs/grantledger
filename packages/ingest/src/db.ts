@@ -25,15 +25,29 @@ function rowValues(g: Grant, hash: string, now: string, rawKey: string | null): 
   ];
 }
 
+// Publishers write "not stated" as a value: an amount of 0 (award floor and ceiling on grants.gov, budget in BDNS),
+// of one cent or of one unit, and a deadline decades away (2099, or 2076 for the standing NSF programmes on
+// grants.gov). Those become null, so no page or assistant shows "up to 0" or a deadline in fifty years.
+function withoutPlaceholders(g: Grant, now: string): Grant {
+  const amount = (n: number | null) => (n !== null && n <= 1 ? null : n);
+  const farAhead = String(Number(now.slice(0, 4)) + 40);
+  return { ...g, amount_min: amount(g.amount_min), amount_max: amount(g.amount_max), budget_total: amount(g.budget_total), closes_at: g.closes_at && g.closes_at >= farAhead ? null : g.closes_at };
+}
+
 // Dates are the source of truth for status: a source can lag behind its own deadlines.
 function statusFromDatesWins(g: Grant, now: string): Grant {
-  // A deadline in 2099 or later is a publisher placeholder for "no deadline".
-  if (g.closes_at && g.closes_at >= "2099") g = { ...g, closes_at: null };
   if (g.closes_at && g.closes_at < now && g.status !== "closed") return { ...g, status: "closed" };
   if (g.closes_at && g.closes_at >= now && g.status === "unknown") return { ...g, status: "open" };
   if (g.opens_at && g.opens_at > now && g.status === "open") return { ...g, status: "forthcoming" };
   if (g.opens_at && g.opens_at <= now && g.status === "forthcoming") return { ...g, status: "open" };
   return g;
+}
+
+// What the enrichment model is given for a record: these fields and nothing else (enrichGrant in
+// apps/web/src/lib/enrich.ts builds its prompt from them; keep the two in step). Lists are compared as sets.
+type ModelInput = Pick<Grant, "title" | "summary" | "funder_name" | "funder_level" | "country" | "regions" | "funding_types" | "beneficiary_types" | "sectors">;
+function modelInput(g: ModelInput): string {
+  return JSON.stringify([g.title, (g.summary ?? "").slice(0, 12_000), g.funder_name ?? "", g.funder_level, g.country, [...g.regions].sort(), [...g.funding_types].sort(), [...g.beneficiary_types].sort(), [...g.sectors].sort()]);
 }
 
 // Raw payloads are archived once per content version, under the hash of the normalized record, so an
@@ -60,7 +74,7 @@ export async function upsertGrants(db: D1Database, bucket: R2Bucket, grants: Gra
   let invalid = 0;
   for (const g of grants) {
     const parsed = GrantSchema.safeParse(g);
-    if (parsed.success) valid.push(statusFromDatesWins(parsed.data, now));
+    if (parsed.success) valid.push(statusFromDatesWins(withoutPlaceholders(parsed.data, now), now));
     else {
       invalid++;
       console.warn("invalid record", g.id, parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
@@ -108,6 +122,23 @@ export async function upsertGrants(db: D1Database, bucket: R2Bucket, grants: Gra
   });
 
   const changedRecords = valid.flatMap((g, i) => (existing.get(g.id) === hashes[i] || superseded.has(g.id) ? [] : [{ source_id: g.source_id, hash: hashes[i]! }]));
+  // A change that leaves the model's input alone (a new deadline, status, amount, document list or update date)
+  // leaves its answer alone too. The enrichment stored for the old content then moves to the new hash, so the call
+  // keeps its English summary and is not sent to the model again. About one change in four is of this kind.
+  const sameInput = new Set<string>();
+  const changedIds = valid.filter((g, i) => existing.has(g.id) && existing.get(g.id) !== hashes[i] && !superseded.has(g.id)).map((g) => g.id);
+  const incoming = new Map(valid.map((g) => [g.id, g]));
+  for (let i = 0; i < changedIds.length; i += 100) {
+    const chunk = changedIds.slice(i, i + 100);
+    const res = await db
+      .prepare(`SELECT id, title, summary, funder_name, funder_level, country, regions, funding_types, beneficiary_types, sectors FROM grants WHERE id IN (${chunk.map(() => "?").join(",")})`)
+      .bind(...chunk)
+      .all<{ id: string; title: string; summary: string | null; funder_name: string | null; funder_level: Grant["funder_level"]; country: string; regions: string; funding_types: string; beneficiary_types: string; sectors: string }>();
+    for (const row of res.results) {
+      const before = modelInput({ ...row, regions: JSON.parse(row.regions), funding_types: JSON.parse(row.funding_types), beneficiary_types: JSON.parse(row.beneficiary_types), sectors: JSON.parse(row.sectors) });
+      if (before === modelInput(incoming.get(row.id)!)) sameInput.add(row.id);
+    }
+  }
   const rawKeys = await storeRaw(bucket, valid[0]!.source, new Map(raws.map((r) => [r.source_id, r.payload])), changedRecords);
 
   // One group of statements per record, so a record and its version row always land in the same batch.
@@ -129,6 +160,8 @@ export async function upsertGrants(db: D1Database, bucket: R2Bucket, grants: Gra
     groups.push([
       db.prepare(UPSERT_SQL).bind(...rowValues(g, hash, now, rawKeys.get(g.source_id) ?? null)),
       db.prepare("INSERT INTO grant_versions (grant_id, content_hash, snapshot, seen_at) VALUES (?, ?, ?, ?)").bind(g.id, hash, JSON.stringify(g), now),
+      // Only an enrichment made for the content being replaced moves; an older one stays out of date.
+      ...(sameInput.has(g.id) ? [db.prepare("UPDATE grant_enrichments SET content_hash = ? WHERE grant_id = ? AND content_hash = ?").bind(hash, g.id, existing.get(g.id)!)] : []),
     ]);
   });
   let batch: D1PreparedStatement[] = [];
