@@ -5,9 +5,11 @@
 export const PRICE_IN_USD_PER_M = 0.75;
 export const PRICE_OUT_USD_PER_M = 3.75;
 export const PRICE_DOUBLES_FROM_MONTH = "2027-01";
+// A call served by the Flex tier costs half. Its ledger row carries this mark at the end of the model name.
+export const FLEX_SUFFIX = "@flex";
 export const DEFAULT_LIMIT_USD = 10;
 
-export interface Spend { month: string; input_tokens: number; output_tokens: number; usd: number; limit_usd: number; blocked: boolean; enrichments: number; prefills: number }
+export interface Spend { month: string; input_tokens: number; output_tokens: number; usd: number; limit_usd: number; blocked: boolean; enrichments: number; prefills: number; flex_calls: number }
 
 // Prices per million tokens in a month given as YYYY-MM.
 export function prices(month: string): { input: number; output: number } {
@@ -35,13 +37,12 @@ export async function monthSpend(db: D1Database): Promise<Spend> {
   const month = new Date().toISOString().slice(0, 7);
   // A half-open range uses the created_at index; LIKE 'YYYY-MM%' scanned the whole table on every call.
   const [row, limit] = await Promise.all([
-    db.prepare("SELECT SUM(input_tokens) AS i, SUM(output_tokens) AS o, SUM(kind = 'enrichment') AS e, SUM(kind = 'prefill') AS p FROM model_usage WHERE created_at >= ? AND created_at < ?").bind(`${month}-01`, `${month}-99`).first<{ i: number | null; o: number | null; e: number | null; p: number | null }>(),
+    // bi and bo are the tokens as billed: those of a Flex call count for half.
+    db.prepare(`SELECT SUM(input_tokens) AS i, SUM(output_tokens) AS o, SUM(input_tokens * CASE WHEN model LIKE '%${FLEX_SUFFIX}' THEN 0.5 ELSE 1 END) AS bi, SUM(output_tokens * CASE WHEN model LIKE '%${FLEX_SUFFIX}' THEN 0.5 ELSE 1 END) AS bo, SUM(model LIKE '%${FLEX_SUFFIX}') AS f, SUM(kind = 'enrichment') AS e, SUM(kind = 'prefill') AS p FROM model_usage WHERE created_at >= ? AND created_at < ?`).bind(`${month}-01`, `${month}-99`).first<{ i: number | null; o: number | null; bi: number | null; bo: number | null; f: number | null; e: number | null; p: number | null }>(),
     getLimitUsd(db),
   ]);
-  const input = row?.i ?? 0;
-  const output = row?.o ?? 0;
-  const usd = costUsd(input, output, month);
-  return { month, input_tokens: input, output_tokens: output, usd, limit_usd: limit, blocked: usd >= limit, enrichments: row?.e ?? 0, prefills: row?.p ?? 0 };
+  const usd = costUsd(row?.bi ?? 0, row?.bo ?? 0, month);
+  return { month, input_tokens: row?.i ?? 0, output_tokens: row?.o ?? 0, usd, limit_usd: limit, blocked: usd >= limit, enrichments: row?.e ?? 0, prefills: row?.p ?? 0, flex_calls: row?.f ?? 0 };
 }
 
 // A call reserves an estimate before it starts, so concurrent calls near the limit are bounded; the reservation is

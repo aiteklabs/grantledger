@@ -31,7 +31,7 @@ const announced = Astro.url.searchParams.get("announced");
       <div class="stat"><div class="n">{spend.enrichments}</div><div class="l">enrichments</div></div>
       <div class="stat"><div class="n">{spend.prefills}</div><div class="l">prefills</div></div>
     </div>
-    <p class="small muted">{spend.input_tokens.toLocaleString("en-GB")} tokens in, {spend.output_tokens.toLocaleString("en-GB")} out, priced at ${prices(spend.month).input} and ${prices(spend.month).output} per million. {spend.blocked ? "Budget reached: prefill and enrichment are refused until next month or a higher limit." : "Prefill and enrichment stop by themselves when the limit is reached."}</p>
+    <p class="small muted">{spend.input_tokens.toLocaleString("en-GB")} tokens in, {spend.output_tokens.toLocaleString("en-GB")} out, priced at ${prices(spend.month).input} and ${prices(spend.month).output} per million. {spend.flex_calls} calls were served by the Flex tier at half that price. {spend.blocked ? "Budget reached: prefill and enrichment are refused until next month or a higher limit." : "Prefill and enrichment stop by themselves when the limit is reached."}</p>
     <form method="post" action="/api/admin/settings" class="filters" style="margin:0 0 2rem">
       <label class="small">Monthly limit (USD) <input type="text" name="model_monthly_limit_usd" value={spend.limit_usd} inputmode="decimal" style="width:6rem;margin-left:0.4rem" /></label>
       <button class="btn ghost" type="submit" style="padding:0.4rem 0.8rem">Save limit</button>

@@ -1,6 +1,6 @@
 import { GeminiParseError, generateJson, type GeminiEnv } from "./gemini";
 import type { GrantRow } from "./db";
-import { assertBudget, recordUsage, reserveUsage } from "./spend";
+import { FLEX_SUFFIX, assertBudget, recordUsage, reserveUsage } from "./spend";
 
 // Offline enrichment: one model pass per record whose source publishes no structured eligibility.
 // Output is stored in grant_enrichments and used by the matcher as a fallback. Never called at request time.
@@ -35,7 +35,7 @@ const SCHEMA = {
 const SYSTEM = `You read one public funding call and extract its eligibility conditions as structured fields.
 Only state what the text says. When the text is silent, return empty lists or null. Do not guess sectors from the funder's name.`;
 
-export async function enrichGrant(env: GeminiEnv, g: GrantRow) {
+export async function enrichGrant(env: GeminiEnv, g: GrantRow, tier?: "flex") {
   const text = [
     `TITLE: ${g.title}`,
     `FUNDER: ${g.funder_name ?? ""} (${g.funder_level}, ${g.country})`,
@@ -45,7 +45,7 @@ export async function enrichGrant(env: GeminiEnv, g: GrantRow) {
     `PUBLISHED REGIONS: ${g.regions}`,
     `TEXT:\n${(g.summary ?? "").slice(0, 12_000)}`,
   ].join("\n");
-  return generateJson<Enrichment>(env, { system: SYSTEM, input: [{ type: "text", text }], schema: SCHEMA, thinking: "low" });
+  return generateJson<Enrichment>(env, { system: SYSTEM, input: [{ type: "text", text }], schema: SCHEMA, thinking: "low", tier });
 }
 
 // Enriches up to `limit` current records with no enrichment for their current content. Returns how many were written.
@@ -68,12 +68,18 @@ export async function enrichBatch(env: GeminiEnv & { DB: D1Database; GEMINI_MODE
     .all<GrantRow>();
   let done = 0;
   const errors: string[] = [];
+  // Enrichment is background work, so each call asks for the Flex tier first (half price). The batch stops asking
+  // once Flex refuses a call (no capacity: every later call would only be sent twice) or answers slowly (a Flex call
+  // may wait in a queue for minutes, and the batch runs inside one request).
+  let flex = true;
   for (const g of rows.results) {
     try {
       await assertBudget(env.DB, 0.7);
       const reservation = await reserveUsage(env.DB, "enrichment", g.id, env.GEMINI_MODEL, 5_000, 1_500);
-      const r = await enrichGrant(env, g);
-      await recordUsage(env.DB, "enrichment", g.id, env.GEMINI_MODEL, r.input_tokens, r.output_tokens, reservation);
+      const started = Date.now();
+      const r = await enrichGrant(env, g, flex ? "flex" : undefined);
+      if (r.flex_refused || Date.now() - started > 60_000) flex = false;
+      await recordUsage(env.DB, "enrichment", g.id, r.tier === "flex" ? `${env.GEMINI_MODEL}${FLEX_SUFFIX}` : env.GEMINI_MODEL, r.input_tokens, r.output_tokens, reservation);
       const d = r.data;
       await env.DB.prepare(
         `INSERT OR REPLACE INTO grant_enrichments (grant_id, beneficiary_types, sectors, regions, company_sizes, min_company_age, max_company_age, consortium_required, summary_en, keywords_en, model, input_tokens, output_tokens, created_at, content_hash)

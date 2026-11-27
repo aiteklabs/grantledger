@@ -15,6 +15,10 @@ export interface GeminiResult<T> {
   raw: unknown;
   input_tokens: number | null;
   output_tokens: number | null;
+  // The tier that answered. "flex" is billed at half the standard price.
+  tier: "standard" | "flex";
+  // True when the Flex tier was asked for and refused the request (no capacity), so the standard tier answered.
+  flex_refused: boolean;
 }
 
 export function geminiConfigured(env: GeminiEnv): boolean {
@@ -27,7 +31,10 @@ export class GeminiParseError extends Error {
   }
 }
 
-export async function generateJson<T>(env: GeminiEnv, opts: { system: string; input: ContentItem[]; schema: Record<string, unknown>; thinking?: "low" | "medium" | "high" }): Promise<GeminiResult<T>> {
+// `tier: "flex"` asks for the Flex tier: half the standard price, served only while Google has spare capacity. It is
+// for background work. Without capacity the request is refused at once (HTTP 503 or 429, nothing billed); Google does
+// not move it to the standard tier, so it is sent again here without the tier.
+export async function generateJson<T>(env: GeminiEnv, opts: { system: string; input: ContentItem[]; schema: Record<string, unknown>; thinking?: "low" | "medium" | "high"; tier?: "flex" }): Promise<GeminiResult<T>> {
   const body = {
     model: env.GEMINI_MODEL,
     input: opts.input,
@@ -36,27 +43,32 @@ export async function generateJson<T>(env: GeminiEnv, opts: { system: string; in
     response_format: { type: "text", mime_type: "application/json", schema: opts.schema },
     store: false,
   };
-  let res: Response;
-  if (env.AI) {
-    res = await env.AI.gateway(env.AI_GATEWAY_ID).run({
-      provider: "google-ai-studio",
-      endpoint: "v1beta/interactions",
-      headers: { "content-type": "application/json" },
-      query: body,
-    });
-  } else if (env.GEMINI_API_KEY) {
-    res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify(body),
-    });
-  } else {
+  const send = async (query: Record<string, unknown>): Promise<Response> => {
+    if (env.AI) {
+      return env.AI.gateway(env.AI_GATEWAY_ID).run({
+        provider: "google-ai-studio",
+        endpoint: "v1beta/interactions",
+        headers: { "content-type": "application/json" },
+        query,
+      });
+    }
+    if (env.GEMINI_API_KEY) {
+      return fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify(query),
+      });
+    }
     throw new Error("No model access: AI binding missing and GEMINI_API_KEY not set");
-  }
+  };
+  let res = await send(opts.tier ? { ...body, service_tier: opts.tier } : body);
+  const flexRefused = opts.tier === "flex" && (res.status === 503 || res.status === 429);
+  if (flexRefused) res = await send(body);
   const text = await res.text();
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${text.slice(0, 500)}`);
   const raw = JSON.parse(text) as {
     status?: string;
+    service_tier?: string;
     steps?: { type: string; content?: { type: string; text?: string }[] }[];
     usage?: Record<string, number>;
   };
@@ -75,5 +87,7 @@ export async function generateJson<T>(env: GeminiEnv, opts: { system: string; in
     // Usage is still owed for an unparseable answer; the caller records it from the error.
     throw new GeminiParseError(`Gemini returned invalid JSON: ${outText.slice(0, 200)}`, inputTokens, outputTokens);
   }
-  return { data, raw, input_tokens: inputTokens, output_tokens: outputTokens };
+  // The response names the tier that served it. Without the field, only a request that was not refused counts as Flex.
+  const tier = raw.service_tier === "flex" || (raw.service_tier === undefined && opts.tier === "flex" && !flexRefused) ? "flex" : "standard";
+  return { data, raw, input_tokens: inputTokens, output_tokens: outputTokens, tier, flex_refused: flexRefused };
 }

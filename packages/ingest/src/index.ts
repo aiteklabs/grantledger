@@ -10,6 +10,14 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body, null, 2), { status, headers: { "content-type": "application/json" } });
 }
 
+const STALE_FEED_DAYS = 14;
+
+// A feed is judged by its newest record: an incremental crawl only touches the calls that changed.
+async function markStaleFeeds(db: D1Database): Promise<void> {
+  const cutoff = new Date(Date.now() - STALE_FEED_DAYS * 86_400_000).toISOString();
+  await db.prepare("UPDATE grants SET status = 'unknown' WHERE status IN ('open', 'forthcoming') AND source IN (SELECT source FROM grants GROUP BY source HAVING MAX(last_seen_at) < ?)").bind(cutoff).run();
+}
+
 export default {
   // 03:00 UTC: crawl every source (incremental where the source supports it, full recrawl otherwise).
   // 05:00 UTC: enrich up to 150 newly crawled open calls through the site's endpoint, under its monthly budget.
@@ -38,6 +46,10 @@ export default {
       return;
     }
     if (controller.cron === "0 5 * * *") {
+      // A feed nobody has reached for two weeks (publisher down, or refusing every network) can no longer vouch for
+      // its calls: they leave the lists and their pages say "Unknown" with the date of the last check. Record and
+      // history stay; the next crawl that gets through writes the status again.
+      ctx.waitUntil(markStaleFeeds(env.DB));
       if (!env.WEB_URL || !env.ADMIN_TOKEN) return;
       ctx.waitUntil(
         (async () => {
