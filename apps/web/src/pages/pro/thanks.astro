@@ -1,0 +1,49 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import CodeForm from "~/components/CodeForm.astro";
+import { currentAccount, safeNext } from "~/lib/account";
+import { t } from "~/i18n";
+export const prerender = false;
+
+// Stripe sends the buyer here after payment. The webhook usually lands first; until it has saved the account and sent
+// the welcome email, say so. Then the page asks for the code of that email: the gl_login cookie gets the challenge of
+// the newest open sign-in row, and the Stripe session id in the address is what entitles this browser to it. A buyer
+// already signed in here goes on (to the assistant connection it came from, or /me); a buyer back after the code
+// expired or was used elsewhere is sent to sign in again.
+const d = t(Astro.locals.locale);
+const sessionId = Astro.url.searchParams.get("session_id") ?? "";
+const account = /^cs_[A-Za-z0-9_]+$/.test(sessionId) ? await env.DB.prepare("SELECT email FROM accounts WHERE stripe_session_id = ?").bind(sessionId).first<{ email: string }>() : null;
+if (account && (await currentAccount(Astro.request, env))?.email === account.email) {
+  const resume = Astro.cookies.get("gl_next")?.value;
+  if (resume) Astro.cookies.delete("gl_next", { path: "/" });
+  return Astro.redirect(safeNext(resume), 303);
+}
+const profiles = account ? ((await env.DB.prepare("SELECT COUNT(*) AS n FROM radars WHERE email = ? AND active = 1").bind(account.email).first<{ n: number }>())?.n ?? 0) : 0;
+const login = account ? await env.DB.prepare("SELECT challenge FROM logins WHERE email = ? AND challenge IS NOT NULL AND used_at IS NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1").bind(account.email, new Date().toISOString()).first<{ challenge: string }>() : null;
+if (login) Astro.cookies.set("gl_login", login.challenge, { path: "/", maxAge: 1800, httpOnly: true, secure: true, sameSite: "lax" });
+---
+<Base title="Pro" noindex={true}>
+  <div class="wrap" style="padding-top:3rem;max-width:720px">
+    <span class="kicker">Pro</span>
+    {account && login ? (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_ready_title}</h1>
+        <p class="lead">{d.thanks_ready_text.replace("{email}", account.email)}{profiles > 0 && ` ${d.thanks_saved}`} {d.thanks_receipt}</p>
+        <CodeForm next="/me" />
+      </>
+    ) : account ? (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_again_title}</h1>
+        <p class="lead">{d.thanks_again_text.replace("{email}", account.email)} {d.thanks_receipt}</p>
+        <p><a class="btn" href="/login?next=%2Fme">{d.login_title}</a></p>
+      </>
+    ) : (
+      <>
+        <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{d.thanks_wait_title}</h1>
+        <p class="lead">{d.thanks_wait_text}</p>
+        <p><a class="btn ghost" href="">{d.thanks_refresh}</a></p>
+      </>
+    )}
+  </div>
+</Base>

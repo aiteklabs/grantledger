@@ -1,0 +1,76 @@
+// Model spend guard. Every model call appends its token counts to model_usage; the month-to-date cost is computed
+// from that ledger and compared to the limit kept in settings. Prices are Gemini 3.8 Flash list prices per million tokens:
+// the introductory prices, which end on 2026-12-31. From 2027-01-01 both are twice as high (Google's pricing page,
+// read 2026-11-27).
+export const PRICE_IN_USD_PER_M = 0.75;
+export const PRICE_OUT_USD_PER_M = 3.75;
+export const PRICE_DOUBLES_FROM_MONTH = "2027-01";
+// A call served by the Flex tier costs half. Its ledger row carries this mark at the end of the model name.
+export const FLEX_SUFFIX = "@flex";
+export const DEFAULT_LIMIT_USD = 10;
+
+export interface Spend { month: string; input_tokens: number; output_tokens: number; usd: number; limit_usd: number; blocked: boolean; enrichments: number; prefills: number; flex_calls: number }
+
+// Prices per million tokens in a month given as YYYY-MM.
+export function prices(month: string): { input: number; output: number } {
+  const factor = month >= PRICE_DOUBLES_FROM_MONTH ? 2 : 1;
+  return { input: PRICE_IN_USD_PER_M * factor, output: PRICE_OUT_USD_PER_M * factor };
+}
+
+// `month` is the month the tokens were used in.
+export function costUsd(inputTokens: number, outputTokens: number, month: string): number {
+  const p = prices(month);
+  return (inputTokens / 1e6) * p.input + (outputTokens / 1e6) * p.output;
+}
+
+export async function getLimitUsd(db: D1Database): Promise<number> {
+  const row = await db.prepare("SELECT value FROM settings WHERE key = 'model_monthly_limit_usd'").first<{ value: string }>();
+  const n = Number(row?.value);
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_LIMIT_USD;
+}
+
+export async function setLimitUsd(db: D1Database, usd: number): Promise<void> {
+  await db.prepare("INSERT INTO settings (key, value, updated_at) VALUES ('model_monthly_limit_usd', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at").bind(String(usd), new Date().toISOString()).run();
+}
+
+export async function monthSpend(db: D1Database): Promise<Spend> {
+  const month = new Date().toISOString().slice(0, 7);
+  // A half-open range uses the created_at index; LIKE 'YYYY-MM%' scanned the whole table on every call.
+  const [row, limit] = await Promise.all([
+    // bi and bo are the tokens as billed: those of a Flex call count for half.
+    db.prepare(`SELECT SUM(input_tokens) AS i, SUM(output_tokens) AS o, SUM(input_tokens * CASE WHEN model LIKE '%${FLEX_SUFFIX}' THEN 0.5 ELSE 1 END) AS bi, SUM(output_tokens * CASE WHEN model LIKE '%${FLEX_SUFFIX}' THEN 0.5 ELSE 1 END) AS bo, SUM(model LIKE '%${FLEX_SUFFIX}') AS f, SUM(kind = 'enrichment') AS e, SUM(kind = 'prefill') AS p FROM model_usage WHERE created_at >= ? AND created_at < ?`).bind(`${month}-01`, `${month}-99`).first<{ i: number | null; o: number | null; bi: number | null; bo: number | null; f: number | null; e: number | null; p: number | null }>(),
+    getLimitUsd(db),
+  ]);
+  const usd = costUsd(row?.bi ?? 0, row?.bo ?? 0, month);
+  return { month, input_tokens: row?.i ?? 0, output_tokens: row?.o ?? 0, usd, limit_usd: limit, blocked: usd >= limit, enrichments: row?.e ?? 0, prefills: row?.p ?? 0, flex_calls: row?.f ?? 0 };
+}
+
+// A call reserves an estimate before it starts, so concurrent calls near the limit are bounded; the reservation is
+// replaced by the real usage when known, or stays as a conservative charge when the call never reports back.
+export async function reserveUsage(db: D1Database, kind: "prefill" | "enrichment", ref: string, model: string, inputTokens: number, outputTokens: number): Promise<number> {
+  const res = await db.prepare("INSERT INTO model_usage (created_at, kind, ref, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?) RETURNING id").bind(new Date().toISOString(), kind, `reserve:${ref}`, model, inputTokens, outputTokens).first<{ id: number }>();
+  return res?.id ?? 0;
+}
+
+// Every model call is written here as soon as its usage is known, before its result is parsed or stored.
+export async function recordUsage(db: D1Database, kind: "prefill" | "enrichment", ref: string, model: string, inputTokens: number | null, outputTokens: number | null, reservationId?: number): Promise<void> {
+  const stmts = [db.prepare("INSERT INTO model_usage (created_at, kind, ref, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?)").bind(new Date().toISOString(), kind, ref, model, inputTokens ?? 0, outputTokens ?? 0)];
+  if (reservationId) stmts.push(db.prepare("DELETE FROM model_usage WHERE id = ?").bind(reservationId));
+  await db.batch(stmts);
+}
+
+// First day of next month, when the budget resets, and the whole days left until then.
+export function budgetReset(): { date: string; days: number } {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  return { date: next.toISOString().slice(0, 10), days: Math.ceil((next.getTime() - now.getTime()) / 86_400_000) };
+}
+
+// Throws when the month is over budget. Called before every model call.
+// `share` lets background work stop earlier than the hard limit, so some budget stays for user prefills.
+export async function assertBudget(db: D1Database, share = 1): Promise<Spend> {
+  const s = await monthSpend(db);
+  const cap = s.limit_usd * share;
+  if (s.blocked || s.usd >= cap) throw new Error(`Model budget reached: $${s.usd.toFixed(2)} of $${cap.toFixed(2)} this month`);
+  return s;
+}

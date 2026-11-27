@@ -1,0 +1,56 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { isAdmin, unauthorized } from "~/lib/auth";
+import { getFitCheck, getFitMatches } from "~/lib/db";
+import { fmtDate, parseJson } from "~/lib/format";
+
+export const prerender = false;
+if (!(await isAdmin(Astro.request, env))) return unauthorized(env);
+const id = Astro.params.id ?? "";
+const check = await getFitCheck(env.DB, id);
+if (!check) return new Response("Not found", { status: 404 });
+const matches = await getFitMatches(env.DB, id);
+---
+<Base title="Fit check detail" noindex>
+  <div class="wrap" style="padding-top:2.5rem;max-width:960px">
+    <span class="kicker"><a href="/admin">← Admin</a></span>
+    <h1 style="font-size:clamp(1.6rem,3.5vw,2.6rem)">Fit check {id.slice(0, 8)}</h1>
+    <dl class="profile-grid">
+      <div><b>Created</b>{fmtDate(check.created_at)} {check.created_at.slice(11, 19)}</div>
+      <div><b>Status</b>{check.status}</div>
+      <div><b>Input</b>{check.input_type} · {check.input_name ?? "—"}</div>
+      <div><b>Reference</b><span class="mono small">{check.input_ref ?? "—"}</span></div>
+      <div><b>Email</b>{check.contact_email ?? "—"}</div>
+      <div><b>Model</b>{check.model ?? "—"}</div>
+      <div><b>Tokens</b>{check.input_tokens ?? 0} in / {check.output_tokens ?? 0} out</div>
+      <div><b>Duration</b>{check.duration_ms ? `${Math.round(check.duration_ms / 1000)}s` : "—"}</div>
+      <div><b>IP hash</b><span class="mono small">{check.ip_hash ?? "—"}</span></div>
+      <div><b>User agent</b><span class="small">{check.user_agent ?? "—"}</span></div>
+    </dl>
+    {check.error && <p class="callout mono small">{check.error}</p>}
+    <p><a href={`/fit/${id}`}>Public result page</a></p>
+    {check.status === "done" && (
+      <form method="post" action="/api/rescreen">
+        <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="back" value="admin" />
+        <button class="btn ghost" type="submit">Re-run with today's ledger</button>
+        <span class="muted small" style="margin-left:0.6rem">Last run {check.finished_at ? `${fmtDate(check.finished_at)} ${check.finished_at.slice(11, 19)}` : "—"}</span>
+      </form>
+    )}
+
+    <h2>Confirmed form</h2>
+    <pre class="small" style="white-space:pre-wrap;background:var(--paper-2);padding:1rem;border:1px solid var(--line)">{JSON.stringify(parseJson(check.form, null), null, 2)}</pre>
+    <h2>AI prefill (if used)</h2>
+    <pre class="small" style="white-space:pre-wrap;background:var(--paper-2);padding:1rem;border:1px solid var(--line)">{JSON.stringify(parseJson(check.profile, null), null, 2)}</pre>
+
+    <h2>Matches ({matches.length})</h2>
+    <table>
+      <thead><tr><th>#</th><th>Verdict</th><th>Score</th><th>Grant</th><th>Reasons</th><th>Missing</th></tr></thead>
+      <tbody>{matches.map((m) => <tr><td>{m.rank}</td><td><span class={`tag ${m.verdict}`}>{m.verdict}</span></td><td>{m.score}</td><td><a href={`/grants/${encodeURI(m.grant.id)}`}>{m.grant.title}</a></td><td class="small">{parseJson<string[]>(m.reasons, []).join(" · ")}</td><td class="small">{parseJson<string[]>(m.missing, []).join(" · ")}</td></tr>)}</tbody>
+    </table>
+
+    <h2>Input text sent to the model</h2>
+    <pre class="small" style="white-space:pre-wrap;background:var(--paper-2);padding:1rem;border:1px solid var(--line);max-height:480px;overflow:auto">{check.input_text ?? "(binary PDF, stored in R2)"}</pre>
+  </div>
+</Base>

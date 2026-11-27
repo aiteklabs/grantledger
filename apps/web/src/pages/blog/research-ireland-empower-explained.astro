@@ -1,0 +1,48 @@
+---
+import Article from "~/components/Article.astro";
+import LiveCalls from "~/components/LiveCalls.astro";
+export const prerender = false;
+---
+<Article slug="research-ireland-empower-explained">
+  <p class="lead">Empower is a new Research Ireland programme that gives higher education institutions recurring funding to carry out their own research and innovation strategies, with a focus on PhD studentships and postdoctoral fellowships. It is by invitation only: 18 institutions can apply, one application each. A student or a researcher does not apply to Research Ireland for it. The 2026 call closed on 6 November 2026.</p>
+
+  <h2>What it is</h2>
+  <p>Research Ireland describes Empower as a recurring, predictable and flexible way to fund institutions, and says each institution has measurable autonomy over how it spends what it receives. The stated aims are to develop research talent, strengthen the institutions, improve researcher development and research culture, and build a more connected research system.</p>
+  <p>Research Ireland also states that the Government of Ireland Postgraduate Scholarship Programme has been integrated into Empower. If you were looking for that scholarship, this is where it went.</p>
+
+  <h2>The figures</h2>
+  <table>
+    <thead><tr><th>Point</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Who applies</td><td>18 invited higher education institutions, the same ones eligible for the INSPIRE programme</td></tr>
+      <tr><td>Applications</td><td>One per institution, submitted by its Vice President for Research, Dean of Research or equivalent</td></tr>
+      <tr><td>Supports</td><td>PhD studentships and postdoctoral fellowships, as the key focus</td></tr>
+      <tr><td>Duration</td><td>72 months</td></tr>
+      <tr><td>Deadline of the 2026 call</td><td>6 November 2026, 13:00 Irish time; closed</td></tr>
+      <tr><td>Notifications</td><td>January 2027</td></tr>
+      <tr><td>Grants start</td><td>March 2027</td></tr>
+      <tr><td>Award amount</td><td>Not published on the programme page</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The 18 institutions</h2>
+  <p>ATU, DCU, DIAS, IADT, DkIT, MIC, Maynooth University, MTU, NCAD, RCSI, SETU, TU Dublin, TUS, Trinity College Dublin, UCC, UCD, University of Galway and University of Limerick.</p>
+
+  <h2>If you want a PhD place or a postdoctoral fellowship</h2>
+  <ol>
+    <li>Do not look for an application form at Research Ireland: there is none for individuals under Empower.</li>
+    <li>Ask the research office or the graduate school of one of the 18 institutions how and when it will award its Empower places. The programme page does not say how each institution will select people, and the grants start in March 2027.</li>
+    <li>Look at the other open calls of Research Ireland and at EU fellowships at the same time. The Irish calls in the ledger are listed below.</li>
+  </ol>
+
+  <h2>If you work in a research office</h2>
+  <p>The call document is linked from the programme page, and Research Ireland gives a contact address for the programme there. The page lists no evaluation criteria and no portal; both are matters for the call document.</p>
+
+  <LiveCalls heading="Irish research calls in the ledger today" q="Research Ireland" country="IE" limit={6} />
+
+  <h2>Sources</h2>
+  <ul class="small">
+    <li>Research Ireland, Empower programme page: purpose, invited institutions, duration, dates. <a href="https://www.researchireland.ie/funding/empower/" rel="noopener">researchireland.ie</a></li>
+    <li>Research Ireland, funding listing: status of the call, career stages, the Government of Ireland Postgraduate Scholarship Programme. <a href="https://www.researchireland.ie/funding/" rel="noopener">researchireland.ie</a></li>
+  </ul>
+</Article>

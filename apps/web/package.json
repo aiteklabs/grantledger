@@ -1,0 +1,27 @@
+{
+  "name": "@grantledger/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "wrangler dev",
+    "typecheck": "astro check",
+    "release": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.8",
+    "@grantledger/schema": "workspace:*",
+    "astro": "^7.4.12",
+    "entities": "^9.0.0",
+    "jose": "^6.2.17",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@cloudflare/workers-types": "^5.20261115.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.162.0"
+  }
+}
