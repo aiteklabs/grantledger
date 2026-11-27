@@ -1,0 +1,93 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { PLANS } from "~/lib/account";
+import { getSiteFacts } from "~/lib/db";
+import { fmtInt } from "~/lib/format";
+export const prerender = false;
+
+// GrantLedger next to Granter.ai. English only. Every statement about Granter comes from its public pages on the
+// day named in CHECKED; when those pages change, read them again and update both the text and the date.
+const CHECKED = "14 November 2026";
+const facts = await getSiteFacts(env.DB);
+const solo = PLANS.solo.eur;
+const team = PLANS.team.eur;
+const title = "GrantLedger vs Granter.ai";
+const description = `GrantLedger and Granter.ai compared: a free, open ledger of public funding with screening for ${solo} euros once, next to an AI grant consultant with a success fee.`;
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: title,
+  description,
+  url: `${env.SITE_URL}/compare/granter-ai`,
+  isPartOf: { "@type": "WebSite", name: "grantledger", url: env.SITE_URL },
+};
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <div class="wrap" style="padding-top:3rem;max-width:900px">
+    <span class="kicker">Compare</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3.2rem)">{title}</h1>
+    <p class="lead">They solve different halves of the same problem. Granter.ai is an AI grant consultant: it finds calls, writes the application with you, and its paid plan adds human experts and a success fee. GrantLedger is an open ledger of public funding: you search every call for free, and for a single small payment fixed rules screen the calls against your profile and alert you each week. The writing happens in the assistant you already use.</p>
+    <p class="small muted">Compared on {CHECKED}, from the public pages of both products. We make GrantLedger, so read this as one side's account and check the links.</p>
+
+    <h2>At a glance</h2>
+    <table>
+      <thead><tr><th>Point</th><th>GrantLedger</th><th>Granter.ai</th></tr></thead>
+      <tbody>
+        <tr><td>What it is</td><td>Open ledger of public funding calls, with screening and alerts</td><td>AI grant consultant covering search, writing and post-approval work</td></tr>
+        <tr><td>Price</td><td>Search is free. Pro is {solo} euros (Solo) or {team} euros (Team), paid once</td><td>Professional: 1,500 euros plus a 5 percent success fee. Enterprise: custom pricing</td></tr>
+        <tr><td>Free use</td><td>Search, every record and the link to the publisher, with no account and no time limit</td><td>One-week free trial of the full platform; a free QuickMatch tool for a first look</td></tr>
+        <tr><td>Success fee</td><td>None</td><td>5 percent on the Professional plan</td></tr>
+        <tr><td>Finding calls</td><td>{fmtInt(facts.active)} current calls from {facts.sources} official sources in {facts.countries} countries plus EU-wide programmes, refreshed every night</td><td>AI matching across regional, national and EU funding; the site does not publish a list of sources</td></tr>
+        <tr><td>Eligibility</td><td>Fixed, published rules give each call a verdict and show the rule behind it. No model decides</td><td>Automatic eligibility checks by its AI agent</td></tr>
+        <tr><td>Alerts</td><td>Weekly email with the new calls that pass, for {PLANS.solo.profiles} profile (Solo) or {PLANS.team.profiles} (Team)</td><td>A live radar on the projects in your workspace</td></tr>
+        <tr><td>Writing the application</td><td>Not on our servers. The ledger connects to ChatGPT or Claude, which drafts from your profile and the call</td><td>Built-in writing co-pilot for full applications, with your own playbooks</td></tr>
+        <tr><td>Scoring a draft</td><td>Through your own assistant, against the criteria on the publisher's page</td><td>Built-in evaluator scoring against the official criteria</td></tr>
+        <tr><td>Human experts</td><td>None. You apply yourself</td><td>Included from the Professional plan, with hands-on submission help</td></tr>
+        <tr><td>After approval</td><td>Not covered</td><td>Post-approval management, deadline tracking and report templates on the Professional plan</td></tr>
+        <tr><td>Teams and consortia</td><td>One account; the Team plan holds {PLANS.team.profiles} profiles</td><td>Cross-team and consortium collaboration</td></tr>
+        <tr><td>Open data and code</td><td>Code under MIT, normalized records under CC0; JSON API for Pro accounts</td><td>Not stated on its site</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Where Granter.ai is the better choice</h2>
+    <ul>
+      <li><b>You want the application written and managed for you.</b> Granter writes inside its platform, scores the draft, and on the Professional plan a person helps you submit. GrantLedger does none of that itself.</li>
+      <li><b>You run many applications as a team.</b> Shared workspaces, playbooks built from your past applications and consortium collaboration are part of its product.</li>
+      <li><b>You need help after the grant is awarded.</b> Reporting, milestones and reminders are covered there and not here.</li>
+      <li><b>A success fee suits you.</b> Paying a share only when the money arrives can be the right deal for a large grant.</li>
+    </ul>
+
+    <h2>Where GrantLedger is the better choice</h2>
+    <ul>
+      <li><b>You want to look before you pay.</b> The whole ledger is searchable with no account: <a href="/grants">search it now</a>, or <a href="/countries">browse by country</a>.</li>
+      <li><b>You want to see why a call fits.</b> Each verdict shows the rule it relies on, and the rules are published on the <a href="/methodology">methodology page</a>. The same profile always gives the same answer.</li>
+      <li><b>You keep the whole grant.</b> No success fee, no percentage, one payment of {solo} or {team} euros for <a href="/pro">Pro</a>.</li>
+      <li><b>You already pay for an AI assistant.</b> Connect the ledger to <a href="/assistant">ChatGPT or Claude</a>: it searches, screens a project you describe, plans the work, drafts the application and scores your draft, on your own subscription.</li>
+      <li><b>You care where the data comes from.</b> Every record links to the official publisher, keeps its history, and the <a href="/coverage">coverage page</a> lists what is included and what is not.</li>
+    </ul>
+
+    <h2>Can you use both</h2>
+    <p>Yes. A common split: use GrantLedger to see everything that is open in your country and at EU level, and to be told each week what is new for you; bring in a writing service, Granter.ai or a human consultant, for the one large application where the fee is worth it.</p>
+
+    <h2>What we could not compare</h2>
+    <ul>
+      <li>Success rates. Granter.ai publishes figures for its users; we have no way to check them and we publish none of our own.</li>
+      <li>The quality of the writing. It depends on the call, on your project and, on our side, on the assistant you connect.</li>
+      <li>How many calls Granter.ai covers. Its site gives no count.</li>
+    </ul>
+
+    <h2>Sources</h2>
+    <ul class="small">
+      <li>Granter.ai home page, read on {CHECKED}: product, features, free tool. <a href="https://granter.ai/" rel="noopener nofollow">granter.ai</a></li>
+      <li>Granter.ai pricing page, read on {CHECKED}: plans, prices, what each plan includes. <a href="https://granter.ai/pricing" rel="noopener nofollow">granter.ai/pricing</a></li>
+      <li>GrantLedger: <a href="/pro">Pro</a>, <a href="/assistant">assistants</a>, <a href="/methodology">methodology</a>, <a href="/coverage">coverage</a>. Counts on this page are computed from the ledger when the page is loaded.</li>
+    </ul>
+    <p class="small muted">Granter is a product of its owner; this page is not affiliated with or endorsed by it. Something wrong or out of date? <a href="https://github.com/aiteklabs/grantledger/issues/new" rel="noopener">Tell us</a> and we correct it.</p>
+
+    <p style="margin-top:2rem"><a class="btn" href="/grants">Search the ledger</a> <a class="btn ghost" href="/pro" style="margin-left:0.6rem">See Pro</a></p>
+  </div>
+</Base>
+<style>
+  h2 { margin-top: 2.4rem; }
+</style>

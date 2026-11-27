@@ -1,0 +1,62 @@
+---
+import { env } from "cloudflare:workers";
+import Base from "~/layouts/Base.astro";
+import { currentAccount } from "~/lib/account";
+import { getGrant } from "~/lib/db";
+import { partnerSearch } from "~/lib/partners";
+
+// Pro: where consortia for one call look for partners, and how to publish your own offer. /partners?call=<grant id>
+// The call id travels in the query string, as on /grants?source=…; the page is in English, like the call pages.
+export const prerender = false;
+const id = Astro.url.searchParams.get("call") ?? "";
+const g = id ? await getGrant(env.DB, id) : null;
+if (!g) return new Response("Not found", { status: 404 });
+const account = await currentAccount(Astro.request, env);
+const help = account ? await partnerSearch(g) : null;
+const callUrl = `/grants/${encodeURI(g.id)}`;
+const here = `/partners?call=${encodeURIComponent(g.id)}`;
+---
+<Base title="Find consortium partners" noindex>
+  <div class="wrap" style="padding-top:3rem;max-width:820px">
+    <span class="kicker">Pro · Find partners</span>
+    <h1 style="font-size:clamp(1.6rem,3.4vw,2.4rem)">Find consortium partners</h1>
+    <p class="lead">For <a href={callUrl}>{g.title}</a> <span class="mono small muted">{g.source_id}</span></p>
+
+    {!account && (
+      <div class="callout">
+        <p style="margin:0 0 0.6rem">Pro shows where consortia in preparation look for partners for this call, how to publish your own offer on the EU portal and on Ideal-ist, and lets your assistant draft that offer from your profile.</p>
+        <p style="margin:0"><a class="btn signal" href="/pro">See Pro</a> <a class="btn ghost" href={`/login?next=${encodeURIComponent(here)}`}>Sign in</a></p>
+      </div>
+    )}
+
+    {account && !help && <p class="callout">No partner search for this call: it is closed, it takes a single applicant, or it is not a call of the EU Funding & Tenders Portal.</p>}
+
+    {help && (
+      <>
+        <p>{help.rule}</p>
+
+        <h2>Where consortia look for partners</h2>
+        <ul>
+          {help.find.map((f) => <li><a href={f.url} rel="noopener" target="_blank">{f.name} ↗</a><br /><span class="muted small">{f.note}</span></li>)}
+        </ul>
+
+        <h2>Publish your own offer</h2>
+        {help.publish.map((p) => (
+          <>
+            <h3><a href={p.url} rel="noopener" target="_blank">{p.where} ↗</a></h3>
+            <ol>{p.steps.map((s) => <li>{s}</li>)}</ol>
+          </>
+        ))}
+
+        <h2>What the offer holds</h2>
+        <p class="muted small">{help.offer.note}</p>
+        <ul>{help.offer.fields.map((f) => <li>{f}</li>)}</ul>
+
+        <div class="callout" style="margin-top:1.5rem">
+          <p style="margin:0">Your assistant can write it from your profile. In ChatGPT or Claude with grantledger connected, ask: <b>"Draft a partner offer for {g.id}"</b>. <a href="/assistant">Connect an assistant</a></p>
+        </div>
+        <p class="small muted" style="margin-top:1.5rem">grantledger publishes nothing on these platforms and vouches for no organisation listed there. Steps read on the EU Funding & Tenders Portal and on ideal-ist.eu on 14 November 2026.</p>
+      </>
+    )}
+  </div>
+</Base>

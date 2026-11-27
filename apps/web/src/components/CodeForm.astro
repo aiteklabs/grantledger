@@ -1,0 +1,19 @@
+---
+import { t } from "~/i18n";
+
+// The six-digit code from the sign-in email, typed on the page that asked for it. /api/code reads the challenge from
+// the gl_login cookie and comes back to this page with wrong=1 when the code does not match.
+interface Props {
+  next?: string;
+}
+const { next = "" } = Astro.props;
+const d = t(Astro.locals.locale);
+const wrong = Astro.url.searchParams.get("wrong") === "1";
+---
+{wrong && <p class="callout">{d.code_wrong}</p>}
+<form method="post" action="/api/code" class="form" style="max-width:320px">
+  <div class="field"><label for="code">{d.code_label}</label><input type="text" id="code" name="code" required inputmode="numeric" autocomplete="one-time-code" autofocus style="font-family:var(--font-mono);font-size:1.4rem;letter-spacing:.3em" /></div>
+  <input type="hidden" name="next" value={next} />
+  <input type="hidden" name="back" value={Astro.url.pathname + Astro.url.search} />
+  <div><button class="btn" type="submit">{d.login_title}</button></div>
+</form>
